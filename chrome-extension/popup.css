@@ -1,0 +1,159 @@
+:root{
+  --bg:#f6efe6;
+  --card:#fffdfa;
+  --text:#171717;
+  --muted:#5f5a53;
+  --line:rgba(23,23,23,.10);
+  --accent:#d86b2f;
+  --accent-dark:#b7511d;
+  --good:#1e7b4d;
+  --bad:#7b1e1e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-width:360px;
+  max-width:360px;
+  background:
+    radial-gradient(520px 260px at 50% -20%, rgba(216,107,47,.16), transparent 62%),
+    linear-gradient(180deg, #fbf6ef 0%, var(--bg) 100%);
+  color:var(--text);
+  font-family:"Trebuchet MS", "Gill Sans", system-ui, sans-serif;
+}
+.shell{
+  padding:18px;
+}
+.eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:rgba(216,107,47,.10);
+  color:var(--accent-dark);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+h1{
+  margin:14px 0 8px;
+  font-size:28px;
+  line-height:.98;
+  letter-spacing:-.04em;
+}
+.sub{
+  margin:0 0 16px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+}
+.panel{
+  border:1px solid var(--line);
+  border-radius:20px;
+  background:var(--card);
+  padding:14px;
+  box-shadow:0 14px 34px rgba(23,23,23,.05);
+  margin-top:12px;
+}
+.label{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.value{
+  margin-top:8px;
+  font-size:14px;
+  font-weight:900;
+  line-height:1.45;
+  word-break:break-word;
+}
+.meta{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.statRow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:12px;
+}
+.stat{
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:rgba(23,23,23,.02);
+  padding:10px 12px;
+}
+.statLabel{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.stat strong{
+  display:block;
+  margin-top:6px;
+  font-size:14px;
+}
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+.actions .btn:last-child{
+  grid-column:1 / -1;
+}
+.btn{
+  appearance:none;
+  border:1px solid var(--line);
+  border-radius:999px;
+  min-height:44px;
+  padding:0 14px;
+  font:900 13px/1 "Trebuchet MS", "Gill Sans", system-ui, sans-serif;
+  cursor:pointer;
+}
+.btn.primary{
+  background:linear-gradient(180deg, #ee9455, #cb6028);
+  border-color:rgba(203,96,40,.38);
+  color:#fff;
+  box-shadow:0 14px 28px rgba(203,96,40,.22);
+}
+.btn.secondary{
+  background:rgba(255,255,255,.78);
+  color:var(--text);
+}
+.btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+.status{
+  margin-top:12px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(30,123,77,.14);
+  background:rgba(30,123,77,.08);
+  color:var(--good);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.5;
+}
+.error{
+  margin-top:10px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(123,30,30,.18);
+  background:rgba(123,30,30,.08);
+  color:var(--bad);
+  display:none;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.5;
+}

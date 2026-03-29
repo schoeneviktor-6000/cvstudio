@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CV Studio Tailor</title>
+  <link rel="stylesheet" href="./popup.css">
+</head>
+<body>
+  <main class="shell">
+    <div class="eyebrow">CV Studio Tailor</div>
+    <h1>Scrape this job page</h1>
+    <p class="sub">Extract the current posting, then open `cvstudio.work` with the job description prefilled for tailoring.</p>
+
+    <div class="panel">
+      <div class="label">Current tab</div>
+      <div class="value" id="pageUrl">Checking active tab…</div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Extracted job</div>
+      <div class="value" id="jobTitle">No scrape yet.</div>
+      <div class="meta" id="jobMeta">Use LinkedIn, Greenhouse, Lever, Indeed, Workday, or any company careers page.</div>
+      <div class="statRow">
+        <div class="stat">
+          <span class="statLabel">Description</span>
+          <strong id="charCount">0 chars</strong>
+        </div>
+        <div class="stat">
+          <span class="statLabel">Source</span>
+          <strong id="sourceHost">-</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" id="rescrapeBtn" type="button">Re-scrape</button>
+      <button class="btn secondary" id="copyBtn" type="button" disabled>Copy text</button>
+      <button class="btn primary" id="openBtn" type="button" disabled>Open in CV Studio</button>
+    </div>
+
+    <div class="status" id="status">Waiting to scrape the current page.</div>
+    <div class="error" id="error"></div>
+  </main>
+
+  <script src="./popup.js"></script>
+</body>
+</html>

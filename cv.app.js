@@ -47,11 +47,14 @@
     let selectedJob = null;
     let selectedDesc = "";
     let selectedApplyUrl = "";
+    const EXT_IMPORT_KEY = "cvstudio_extension_import_v1";
+    const EXT_IMPORT_MAX_DESC = 20000;
 
     // Job source: queue (your saved jobs) vs paste (manual job description)
     let jobSource = STANDALONE_MODE ? "paste" : "queue"; // "queue" | "paste"
     let pasteDraft = { title:"", company:"", apply:"", lang_hint:"auto", desc:"" };
 let pasteCacheKey = "";
+let pendingExtensionImport = null;
 
 // UI: collapsible Setup panel (focus mode)
 let setupCollapsed = false;
@@ -977,6 +980,7 @@ function openGateForNewCv(){
       selectedJob = null;
       selectedDesc = "";
       selectedApplyUrl = "";
+      pendingExtensionImport = null;
       lastCvText = "";
       lastCvDoc = null;
       lastLang = "en";
@@ -1095,6 +1099,52 @@ function loadJobSource(){
           desc: String(obj.desc||"")
         };
       }catch(_){}
+    }
+
+    function consumeExtensionImport(){
+      try{
+        const raw = localStorage.getItem(EXT_IMPORT_KEY);
+        if(!raw) return null;
+        localStorage.removeItem(EXT_IMPORT_KEY);
+
+        const obj = JSON.parse(raw);
+        if(!obj || typeof obj !== "object") return null;
+
+        const desc = String(obj.description || obj.job_description || "").trim().slice(0, EXT_IMPORT_MAX_DESC);
+        if(!desc) return null;
+
+        return {
+          title: String(obj.title || obj.job_title || "").trim(),
+          company: String(obj.company || obj.company_name || "").trim(),
+          apply: String(obj.apply_url || obj.url || "").trim(),
+          lang_hint: String(obj.language_hint || obj.lang_hint || "auto").trim().toLowerCase() || "auto",
+          desc,
+          source_host: String(obj.source_host || "").trim(),
+          source: String(obj.source || "chrome_extension").trim()
+        };
+      }catch(_){
+        try{ localStorage.removeItem(EXT_IMPORT_KEY); }catch(__){}
+        return null;
+      }
+    }
+
+    function applyExtensionImportToDraft(data){
+      const imp = data && typeof data === "object" ? data : null;
+      if(!imp || !String(imp.desc || "").trim()) return false;
+
+      pendingExtensionImport = imp;
+      pasteDraft = {
+        title: String(imp.title || ""),
+        company: String(imp.company || ""),
+        apply: String(imp.apply || ""),
+        lang_hint: String(imp.lang_hint || "auto"),
+        desc: String(imp.desc || "")
+      };
+      jobSource = "paste";
+
+      try{ localStorage.setItem("cvstudio_job_source", "paste"); }catch(_){}
+      try{ localStorage.setItem("cvstudio_paste_draft", JSON.stringify({ ...pasteDraft, at: Date.now(), source: imp.source || "chrome_extension" })); }catch(_){}
+      return true;
     }
 
     function savePasteDraft(){
@@ -5206,11 +5256,26 @@ function openKwModal(keywordRaw){
       }
 
       loadPasteDraft();
+      try{
+        const extImport = consumeExtensionImport();
+        if(extImport) applyExtensionImportToDraft(extImport);
+      }catch(_){}
       applyPasteDraftToInputs();
 
       // apply initial mode UI
       setJobSource(jobSource);
       try{ updatePasteQuality(); }catch(_){}
+      if(pendingExtensionImport){
+        try{
+          const host = pendingExtensionImport.source_host || "";
+          const msg = host
+            ? ("Imported job description from " + host + ". Review and click Generate.")
+            : "Imported job description from your browser extension. Review and click Generate.";
+          window.CVStudioShared?.toast?.(msg, { kind:"good", title:"CV Studio" });
+          setText("jobHint", msg);
+          $("settingsDetails").open = true;
+        }catch(_){}
+      }
 
       // Restore focus mode preference (Setup collapsed)
       // In Step 1 gate we always keep Setup visible.

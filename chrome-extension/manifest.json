@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "CV Studio Tailor",
+  "version": "0.1.0",
+  "description": "Scrape the current job posting and open it in CV Studio for tailoring.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://cvstudio.work/*"
+  ],
+  "action": {
+    "default_title": "CV Studio Tailor",
+    "default_popup": "popup.html"
+  }
+}

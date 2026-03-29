@@ -10,6 +10,21 @@ It keeps:
 
 It intentionally drops the main `jobmejob` product surfaces such as jobs queue, dashboard, and plans from the primary user flow.
 
+## Chrome extension MVP
+
+This repo now also contains an unpacked Chrome extension at [chrome-extension](/Users/viktor/app/products/cvstudio.work/chrome-extension).
+
+The extension flow is:
+- scrape the active job posting page inside Chrome
+- open [extension-bridge.html](/Users/viktor/app/products/cvstudio.work/extension-bridge.html) on `cvstudio.work`
+- store the extracted job payload in site localStorage
+- continue into [cv.html](/Users/viktor/app/products/cvstudio.work/cv.html) so the existing paste-tailor flow can use the user’s stored CV
+
+This keeps the hard parts reused:
+- existing Supabase sign-in
+- existing uploaded/stored CV
+- existing `/me/cv/tailor_from_text` path and exports
+
 ## Local preview
 
 ```bash
@@ -29,6 +44,11 @@ To make `cvstudio.work` work with the same backend, update:
 - Supabase Auth site URL if needed for your preferred default redirect
 - Google OAuth / Supabase Google provider settings so the new domain is allowed
 - Worker CORS allowlist so requests from `https://cvstudio.work` are accepted
+
+For the Chrome extension in production, also verify:
+- `https://cvstudio.work/extension-bridge.html` is deployed
+- the extension opens the production domain, not localhost
+- Chrome Web Store listing/privacy copy explains that job page text is sent into `cvstudio.work` for tailoring
 
 ## Deployment
 

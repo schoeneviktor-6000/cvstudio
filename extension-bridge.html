@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>CV Studio | Importing job description</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>
+    :root{
+      --bg:#f6f1e8;
+      --card:#fffdfa;
+      --text:#171717;
+      --muted:#625d55;
+      --line:rgba(23,23,23,.10);
+      --accent:#d86b2f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+      background:
+        radial-gradient(900px 420px at 50% -10%, rgba(216,107,47,.14), transparent 60%),
+        linear-gradient(180deg, #fbf6ef 0%, var(--bg) 100%);
+      color:var(--text);
+      font-family:Georgia, "Times New Roman", serif;
+    }
+    .card{
+      width:min(560px, 100%);
+      border:1px solid var(--line);
+      border-radius:28px;
+      background:var(--card);
+      box-shadow:0 28px 70px rgba(23,23,23,.08);
+      padding:28px;
+    }
+    h1{
+      margin:0 0 10px;
+      font-size:34px;
+      line-height:1.02;
+      letter-spacing:-.04em;
+    }
+    p{
+      margin:0;
+      color:var(--muted);
+      line-height:1.65;
+      font-size:16px;
+    }
+    .meta{
+      margin-top:16px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(216,107,47,.06);
+      color:var(--accent);
+      font:600 13px/1.5 "Trebuchet MS", "Gill Sans", sans-serif;
+      letter-spacing:.03em;
+      text-transform:uppercase;
+    }
+    .error{
+      margin-top:16px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid rgba(180, 30, 30, .18);
+      background:rgba(180, 30, 30, .08);
+      color:#6a1717;
+      display:none;
+      font:700 14px/1.5 "Trebuchet MS", "Gill Sans", sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Importing the current job page</h1>
+    <p id="status">Preparing the job description so CV Studio can open it in the existing tailoring flow.</p>
+    <div class="meta" id="meta">Waiting for extension payload…</div>
+    <div class="error" id="error"></div>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const EXT_IMPORT_KEY = "cvstudio_extension_import_v1";
+      const MAX_DESCRIPTION_CHARS = 20000;
+
+      function setText(id, value){
+        const el = document.getElementById(id);
+        if(el) el.textContent = String(value || "");
+      }
+
+      function showError(message){
+        const el = document.getElementById("error");
+        if(!el) return;
+        el.style.display = "block";
+        el.textContent = String(message || "Unknown import error.");
+      }
+
+      function decodeBase64UrlUtf8(input){
+        const raw = String(input || "").trim();
+        if(!raw) return "";
+        const base64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "=".repeat((4 - (base64.length % 4 || 4)) % 4);
+        const ascii = atob(padded);
+        const bytes = Uint8Array.from(ascii, (ch) => ch.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+      }
+
+      function normalizeImport(payload){
+        const obj = payload && typeof payload === "object" ? payload : {};
+        const title = String(obj.title || obj.job_title || obj.page_title || "").trim();
+        const company = String(obj.company || obj.company_name || "").trim();
+        const apply = String(obj.apply_url || obj.url || "").trim();
+        const description = String(obj.description || obj.job_description || obj.text || "").trim().slice(0, MAX_DESCRIPTION_CHARS);
+        const languageHint = String(obj.language_hint || obj.lang_hint || "auto").trim().toLowerCase() || "auto";
+        const sourceHost = String(obj.source_host || obj.host || "").trim();
+
+        if(!description){
+          throw new Error("The extension did not provide any job description text.");
+        }
+
+        return {
+          title,
+          company,
+          apply_url: apply,
+          language_hint: languageHint,
+          description,
+          source_host: sourceHost,
+          imported_at: new Date().toISOString(),
+          source: "chrome_extension"
+        };
+      }
+
+      function readImportFromHash(){
+        const hash = String(window.location.hash || "");
+        if(!hash.startsWith("#")) return null;
+        const params = new URLSearchParams(hash.slice(1));
+        const raw = params.get("import");
+        if(!raw) return null;
+        const json = decodeBase64UrlUtf8(raw);
+        return normalizeImport(JSON.parse(json));
+      }
+
+      function redirectToStudio(){
+        const next = "./cv.html?source=extension";
+        window.location.replace(next);
+      }
+
+      try{
+        const payload = readImportFromHash();
+        if(!payload){
+          throw new Error("No import payload found in the URL.");
+        }
+
+        localStorage.setItem(EXT_IMPORT_KEY, JSON.stringify(payload));
+        setText("status", "Job description saved. Opening CV Studio now.");
+        setText("meta", [
+          payload.title || "Untitled role",
+          payload.company || "Unknown company",
+          payload.source_host || "Imported from browser extension"
+        ].filter(Boolean).join(" • "));
+
+        setTimeout(redirectToStudio, 140);
+      }catch(err){
+        const message = err && err.message ? err.message : String(err);
+        setText("status", "CV Studio could not import this job page.");
+        setText("meta", "Review the extension output and try again.");
+        showError(message);
+      }
+    })();
+  </script>
+</body>
+</html>
