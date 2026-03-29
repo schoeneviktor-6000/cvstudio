@@ -38,6 +38,40 @@ export function normalizeImportPayload(payload){
 
 export function scrapeJobPostingPage(){
   const host = String(window.location.hostname || "").trim().toLowerCase();
+  const MAX_DESC = 20000;
+
+  function truncateLocal(value, max){
+    const text = String(value || "");
+    if(text.length <= max) return text;
+    return text.slice(0, Math.max(0, max - 1)) + "...";
+  }
+
+  function normalizePayloadLocal(payload){
+    const obj = payload && typeof payload === "object" ? payload : {};
+    return {
+      title: truncateLocal(String(obj.title || "").trim(), 180),
+      company: truncateLocal(String(obj.company || "").trim(), 140),
+      apply_url: String(obj.apply_url || obj.url || "").trim(),
+      source_host: String(obj.source_host || "").trim(),
+      language_hint: String(obj.language_hint || "auto").trim().toLowerCase() || "auto",
+      description: String(obj.description || "").trim().slice(0, MAX_DESC),
+      platform: String(obj.platform || "generic").trim(),
+      page_title: String(obj.page_title || "").trim()
+    };
+  }
+
+  function allDocuments(){
+    const docs = [document];
+    const frames = document.querySelectorAll("iframe");
+    for(const frame of frames){
+      try{
+        if(frame && frame.contentDocument && frame.contentDocument.documentElement){
+          docs.push(frame.contentDocument);
+        }
+      }catch(_){}
+    }
+    return docs;
+  }
 
   function normalizeExtractedText(text){
     const raw = String(text || "").replace(/\r/g, "");
@@ -56,23 +90,88 @@ export function scrapeJobPostingPage(){
     return deduped.join("\n").trim();
   }
 
+  function textFromNode(node){
+    if(!node) return "";
+    return normalizeExtractedText(node.innerText || node.textContent || "");
+  }
+
+  function stripHtml(html){
+    return normalizeExtractedText(
+      String(html || "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/(p|div|li|ul|ol|h[1-6]|section|article)>/gi, "\n")
+        .replace(/<[^>]+>/g, " ")
+    );
+  }
+
   function firstText(selectors){
-    for(const selector of selectors){
-      const el = document.querySelector(selector);
-      if(!el) continue;
-      const text = normalizeExtractedText(el.innerText || el.textContent || "");
-      if(text) return text;
+    for(const doc of allDocuments()){
+      for(const selector of selectors){
+        const el = doc.querySelector(selector);
+        if(!el) continue;
+        const text = textFromNode(el);
+        if(text) return text;
+      }
     }
     return "";
   }
 
+  function firstAttr(selectors, attr = "content"){
+    for(const doc of allDocuments()){
+      for(const selector of selectors){
+        const el = doc.querySelector(selector);
+        if(!el) continue;
+        const value = String(el.getAttribute(attr) || "").trim();
+        if(value) return value;
+      }
+    }
+    return "";
+  }
+
+  function readJsonLdJobPosting(){
+    for(const doc of allDocuments()){
+      const scripts = doc.querySelectorAll("script[type='application/ld+json']");
+      for(const script of scripts){
+        const raw = String(script.textContent || "").trim();
+        if(!raw) continue;
+        try{
+          const parsed = JSON.parse(raw);
+          const queue = Array.isArray(parsed) ? [...parsed] : [parsed];
+
+          while(queue.length){
+            const item = queue.shift();
+            if(!item || typeof item !== "object") continue;
+            if(Array.isArray(item["@graph"])) queue.push(...item["@graph"]);
+
+            const type = String(item["@type"] || "").toLowerCase();
+            if(type !== "jobposting") continue;
+
+            const company =
+              String(item.hiringOrganization?.name || "").trim() ||
+              String(item.organization?.name || "").trim();
+
+            return {
+              title: String(item.title || "").trim(),
+              company,
+              description: stripHtml(item.description || "")
+            };
+          }
+        }catch(_){}
+      }
+    }
+
+    return null;
+  }
+
   function readLargestBlock(selectors, minChars = 120){
     const values = [];
-    for(const selector of selectors){
-      const nodes = document.querySelectorAll(selector);
-      for(const node of nodes){
-        const text = normalizeExtractedText(node.innerText || node.textContent || "");
-        if(text.length >= minChars) values.push(text);
+    for(const doc of allDocuments()){
+      for(const selector of selectors){
+        const nodes = doc.querySelectorAll(selector);
+        for(const node of nodes){
+          const text = textFromNode(node);
+          if(text.length >= minChars) values.push(text);
+        }
       }
     }
     values.sort((a, b) => b.length - a.length);
@@ -80,27 +179,44 @@ export function scrapeJobPostingPage(){
   }
 
   function meta(selector, attr = "content"){
-    const el = document.querySelector(selector);
-    return el ? String(el.getAttribute(attr) || "").trim() : "";
+    return firstAttr([selector], attr);
   }
 
   function fallbackDescription(){
-    const blocks = Array.from(document.querySelectorAll("section, article, main, div"))
-      .map((node) => normalizeExtractedText(node.innerText || node.textContent || ""))
-      .filter((text) => text.length >= 300)
-      .sort((a, b) => b.length - a.length);
-    return blocks[0] || normalizeExtractedText(document.body.innerText || "");
+    const blocks = [];
+    for(const doc of allDocuments()){
+      const nodes = doc.querySelectorAll("section, article, main, div, [role='main']");
+      for(const node of nodes){
+        const text = textFromNode(node);
+        if(text.length >= 300) blocks.push(text);
+      }
+    }
+
+    blocks.sort((a, b) => b.length - a.length);
+    if(blocks[0]) return blocks[0];
+
+    for(const doc of allDocuments()){
+      const rootText = normalizeExtractedText(
+        (doc.body && (doc.body.innerText || doc.body.textContent)) ||
+        (doc.documentElement && (doc.documentElement.innerText || doc.documentElement.textContent)) ||
+        ""
+      );
+      if(rootText.length >= 120) return rootText;
+    }
+
+    return "";
   }
 
   function buildPayload(title, company, description, platform){
+    const jsonLd = readJsonLdJobPosting() || {};
     const lang = String(document.documentElement.lang || "auto").split("-")[0] || "auto";
-    return normalizeImportPayload({
-      title: title || String(document.title || "").replace(/\s+[|\-:]\s+.+$/, "").trim() || "Untitled role",
-      company,
+    return normalizePayloadLocal({
+      title: title || jsonLd.title || meta("meta[property='og:title']") || String(document.title || "").replace(/\s+[|\-:]\s+.+$/, "").trim() || "Untitled role",
+      company: company || jsonLd.company || meta("meta[property='og:site_name']"),
       apply_url: String(window.location.href || "").trim(),
       source_host: host,
       language_hint: lang,
-      description: description || fallbackDescription(),
+      description: description || jsonLd.description || fallbackDescription(),
       platform,
       page_title: String(document.title || "").trim()
     });
@@ -110,6 +226,9 @@ export function scrapeJobPostingPage(){
     const title = firstText([
       ".job-details-jobs-unified-top-card__job-title",
       ".jobs-unified-top-card__job-title",
+      ".jobs-search__job-details--container h1",
+      ".jobs-search__job-details h1",
+      ".scaffold-layout__detail h1",
       ".top-card-layout__title",
       "main h1",
       "h1"
@@ -118,6 +237,9 @@ export function scrapeJobPostingPage(){
     const company = firstText([
       ".job-details-jobs-unified-top-card__company-name",
       ".jobs-unified-top-card__company-name",
+      ".jobs-search__job-details--container a[href*='/company/']",
+      ".jobs-search__job-details a[href*='/company/']",
+      ".scaffold-layout__detail a[href*='/company/']",
       ".topcard__org-name-link",
       ".jobs-unified-top-card__subtitle-primary-grouping a",
       "a[href*='/company/']"
@@ -127,9 +249,16 @@ export function scrapeJobPostingPage(){
       ".jobs-description-content__text",
       ".jobs-box__html-content",
       ".show-more-less-html__markup",
+      ".jobs-search__job-details--wrapper",
+      ".jobs-search__job-details",
+      ".jobs-details",
+      ".job-details-module",
+      ".scaffold-layout__detail",
+      "[class*='jobs-description']",
+      "[class*='job-details']",
       ".jobs-description__container",
       ".jobs-description"
-    ], 160);
+    ], 100);
 
     return buildPayload(title, company, description, "linkedin");
   }
