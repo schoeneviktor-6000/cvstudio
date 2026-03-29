@@ -17,9 +17,9 @@ This repo now also contains a side-panel Chrome extension at [chrome-extension](
 The extension flow is:
 - scrape the active job posting page inside Chrome
 - review and edit the scraped result in the side panel
-- open [extension-bridge.html](/Users/viktor/app/products/cvstudio.work/extension-bridge.html) on `cvstudio.work`
-- store the extracted job payload in site localStorage
-- continue into [cv.html](/Users/viktor/app/products/cvstudio.work/cv.html) so the existing paste-tailor flow can use the user’s stored CV
+- open `https://jobmejob.com/extension-bridge.html`
+- store the extracted job payload in `jobmejob.com` localStorage
+- continue into `jobmejob.com/cv.html` so the existing paste-tailor flow can use the user’s stored CV
 
 This keeps the hard parts reused:
 - existing Supabase sign-in
@@ -49,9 +49,9 @@ To make `cvstudio.work` work with the same backend, update:
 - Worker CORS allowlist so requests from `https://cvstudio.work` are accepted
 
 For the Chrome extension in production, also verify:
-- `https://cvstudio.work/extension-bridge.html` is deployed
+- `https://jobmejob.com/extension-bridge.html` is deployed
 - the extension opens the production domain, not localhost
-- Chrome Web Store listing/privacy copy explains that job page text is sent into `cvstudio.work` for tailoring
+- Chrome Web Store listing/privacy copy explains that job page text is sent into `jobmejob.com` for tailoring
 
 ## Deployment
 

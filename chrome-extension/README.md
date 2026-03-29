@@ -1,6 +1,6 @@
 # CV Studio Chrome Extension
 
-This folder now contains a side-panel-first Chrome extension for `cvstudio.work`.
+This folder now contains a side-panel-first Chrome extension for the CV Studio flow on `jobmejob.com`.
 
 ## What it does
 
@@ -8,7 +8,7 @@ This folder now contains a side-panel-first Chrome extension for `cvstudio.work`
 - scrapes the active job posting page
 - uses cleaner platform-aware heuristics for LinkedIn, Greenhouse, Lever, Indeed, Workday, and generic career pages
 - lets the user review or edit the scraped title, company, URL, and job description
-- opens `https://cvstudio.work/extension-bridge.html` and continues into the existing paste-tailor flow
+- opens `https://jobmejob.com/extension-bridge.html` and continues into the existing paste-tailor flow
 
 ## Load it locally
 
@@ -44,6 +44,6 @@ Supporting publication docs are in [store](/Users/viktor/app/products/cvstudio.w
 
 ## Limits
 
-- The extension does not perform auth itself. It hands the job posting into `cvstudio.work`, which uses the existing Supabase session and stored CV.
-- If the user is not signed in yet, the bridge page stores the imported payload on the `cvstudio.work` origin so the flow can continue after sign-in.
+- The extension does not perform auth itself. It hands the job posting into `jobmejob.com`, which uses the existing Supabase session and stored CV.
+- If the user is not signed in yet, the bridge page stores the imported payload on the `jobmejob.com` origin so the flow can continue after sign-in.
 - Scraping is heuristic-based. Some heavily client-rendered or access-restricted job pages may still need manual cleanup.

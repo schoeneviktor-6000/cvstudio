@@ -1,5 +1,5 @@
 export const MAX_DESCRIPTION_CHARS = 20000;
-export const STUDIO_IMPORT_URL = "https://cvstudio.work/extension-bridge.html#import=";
+export const STUDIO_IMPORT_URL = "https://jobmejob.com/extension-bridge.html#import=";
 
 export function truncateText(value, max){
   const text = String(value || "");

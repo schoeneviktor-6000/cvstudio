@@ -10,7 +10,7 @@ Scrape the current job posting into CV Studio and tailor your saved CV to it.
 
 ## Detailed description
 
-CV Studio Tailor opens a Chrome side panel that reads the current job posting, extracts the full job description, and sends it into `cvstudio.work`.
+CV Studio Tailor opens a Chrome side panel that reads the current job posting, extracts the full job description, and sends it into `jobmejob.com`.
 
 Inside CV Studio, the user can:
 - reuse their already uploaded base CV
@@ -41,4 +41,4 @@ This extension helps a signed-in CV Studio user tailor their existing CV to the 
 
 ## Website
 
-https://cvstudio.work/
+https://jobmejob.com/

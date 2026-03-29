@@ -9,8 +9,8 @@ Data handled:
 - visible job description text from the active page
 
 Data destination:
-- the extension opens `https://cvstudio.work` and passes the extracted job posting into the website
-- CV tailoring happens on `cvstudio.work` using the user’s existing account and uploaded CV
+- the extension opens `https://jobmejob.com` and passes the extracted job posting into the website
+- CV tailoring happens on `jobmejob.com` using the user’s existing account and uploaded CV
 
 The extension itself does not:
 - run background scraping across tabs
@@ -18,4 +18,4 @@ The extension itself does not:
 - inject ads
 - alter job websites
 
-If the user is not signed in on `cvstudio.work`, the imported job data is held on the `cvstudio.work` origin so it can continue after sign-in.
+If the user is not signed in on `jobmejob.com`, the imported job data is held on the `jobmejob.com` origin so it can continue after sign-in.
