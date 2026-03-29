@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CV Studio Tailor</title>
+  <link rel="stylesheet" href="./sidepanel.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">Side panel</div>
+      <h1>Tailor the current job page</h1>
+      <p class="sub">Scrape the active posting, review the extracted text, then open CV Studio with the job description prefilled against the user’s already stored CV.</p>
+    </header>
+
+    <section class="card">
+      <div class="sectionTop">
+        <div>
+          <div class="label">Current page</div>
+          <div class="pageUrl" id="pageUrl">Waiting for an active tab…</div>
+        </div>
+        <label class="toggle">
+          <input id="autoRefresh" type="checkbox" checked>
+          <span>Auto-refresh</span>
+        </label>
+      </div>
+
+      <div class="statGrid">
+        <div class="stat">
+          <span class="statLabel">Platform</span>
+          <strong id="platform">-</strong>
+        </div>
+        <div class="stat">
+          <span class="statLabel">Description</span>
+          <strong id="charCount">0 chars</strong>
+        </div>
+        <div class="stat">
+          <span class="statLabel">Host</span>
+          <strong id="sourceHost">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="jobTitle">Job title</label>
+        <input id="jobTitle" type="text" placeholder="Scraped title will appear here">
+      </div>
+
+      <div class="field">
+        <label for="jobCompany">Company</label>
+        <input id="jobCompany" type="text" placeholder="Scraped company will appear here">
+      </div>
+
+      <div class="field">
+        <label for="jobUrl">Job URL</label>
+        <input id="jobUrl" type="url" placeholder="Current page URL">
+      </div>
+
+      <div class="field">
+        <label for="jobDescription">Job description</label>
+        <textarea id="jobDescription" rows="15" placeholder="Scraped job description will appear here"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="actions">
+        <button class="btn secondary" id="rescrapeBtn" type="button">Scrape current tab</button>
+        <button class="btn secondary" id="copyBtn" type="button" disabled>Copy text</button>
+        <button class="btn primary" id="openBtn" type="button" disabled>Open in CV Studio</button>
+      </div>
+      <div class="hint">The side panel never tailors locally. It opens `cvstudio.work`, which uses the user’s stored CV and the existing backend flow. If a site needs extra permission, the panel asks only for that current origin.</div>
+    </section>
+
+    <div class="status" id="status">Ready to inspect the active job page.</div>
+    <div class="error" id="error"></div>
+  </main>
+
+  <script type="module" src="./sidepanel.js"></script>
+</body>
+</html>

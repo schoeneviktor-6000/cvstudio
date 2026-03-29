@@ -1,18 +1,36 @@
 {
   "manifest_version": 3,
   "name": "CV Studio Tailor",
-  "version": "0.1.0",
-  "description": "Scrape the current job posting and open it in CV Studio for tailoring.",
+  "version": "0.2.0",
+  "description": "Open a side panel that scrapes the current job posting and sends it to CV Studio for tailoring.",
+  "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
+    "contextMenus",
     "scripting",
+    "sidePanel",
     "tabs"
   ],
   "host_permissions": [
     "https://cvstudio.work/*"
   ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_title": "CV Studio Tailor",
-    "default_popup": "popup.html"
+    "default_title": "CV Studio Tailor"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   }
 }
