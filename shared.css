@@ -1,0 +1,794 @@
+/* shared.css â€” JobMeJob multipage (site-wide UI foundation)
+   Version: 2026-02-02 (v4)
+   Goals:
+   - Keep design consistent across all pages
+   - Provide reusable components for the CV Studio (mode bar, gate/step chooser, A4 paper, zoom HUD)
+   - Add more UI primitives without breaking older pages
+*/
+
+:root{
+  --bg:#f6f7fb;
+  --text:#111318;
+  --muted:rgba(17,19,24,.64);
+  --muted2:rgba(17,19,24,.48);
+  --line:rgba(17,19,24,.12);
+
+  --accent:#22c55e;
+  --accent2:#16a34a;
+
+  --ok:#16a34a;
+  --warn:#b86b00;
+  --bad:#d81b60;
+
+  --shadow:0 12px 34px rgba(17,19,24,.12);
+  --shadow2:0 18px 50px rgba(17,19,24,.16);
+
+  --radius:18px;
+  --radius2:22px;
+
+  --max:1120px;
+  --maxWide:1760px;
+
+  --safeTop: env(safe-area-inset-top, 0px);
+  --safeBottom: env(safe-area-inset-bottom, 0px);
+
+  --surface:#ffffff;
+  --surface2:#ffffff;
+  --surface3:#fbfcff;
+
+  --focusRing: 0 0 0 4px rgba(34,197,94,.22);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+body{
+  margin:0;
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 650px at 20% -10%, rgba(34,197,94,.18), transparent 55%),
+    radial-gradient(900px 500px at 90% 10%, rgba(22,163,74,.14), transparent 55%),
+    radial-gradient(800px 600px at 70% 110%, rgba(34,197,94,.08), transparent 55%),
+    var(--bg);
+  overflow-x:hidden;
+}
+
+a{color:inherit;text-decoration:none}
+small{color:var(--muted)}
+img{max-width:100%;height:auto}
+/* Consistent form/control typography (fixes browser default font differences) */
+button,
+input,
+select,
+textarea{
+  font: inherit;
+  color: inherit;
+}
+button{ cursor: pointer; }
+button:disabled{ cursor: not-allowed; }
+summary{ cursor: pointer; }
+
+:focus-visible{
+  outline:none;
+  box-shadow: var(--focusRing);
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{scroll-behavior:auto !important}
+  .leaving{transition:none !important}
+  .pill,.btn,.iconBtn,.chip,.tabBtn,.modeTab,.gateCard,.toast{transition:none !important}
+  .logo::after{animation:none !important}
+}
+
+/* ============================================================
+Global transitions
+============================================================ */
+.leaving{opacity:.7;transform:translateY(6px);transition:all .18s ease}
+body.modalOpen{overflow:hidden}
+
+/* ============================================================
+Topbar / Navigation
+============================================================ */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:30;
+  background:rgba(246,247,251,.86);
+  -webkit-backdrop-filter:saturate(1.2) blur(12px);
+  backdrop-filter:saturate(1.2) blur(12px);
+  border-bottom:1px solid var(--line);
+  padding-top:var(--safeTop);
+}
+
+.nav{
+  max-width:var(--max);
+  margin:0 auto;
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:950;
+  letter-spacing:.2px;
+  min-width:0;
+}
+
+.logo{
+  width:34px;height:34px;border-radius:11px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 10px 30px rgba(34,197,94,.22);
+  flex:0 0 auto;
+  position:relative;
+  overflow:hidden;
+}
+.logo::after{
+  content:"";
+  position:absolute;
+  inset:-45%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+  transform:rotate(20deg);
+  animation:shine 2.8s ease-in-out infinite;
+}
+@keyframes shine{
+  0%{transform:translateX(-55%) rotate(20deg);opacity:0}
+  35%{opacity:1}
+  70%{opacity:0}
+  100%{transform:translateX(55%) rotate(20deg);opacity:0}
+}
+
+.navlinks{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+/* Pills (nav + small actions) */
+.pill{
+  padding:9px 12px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:rgba(17,19,24,.04);
+  font-weight:850;
+  font-size:13px;
+  transition:.15s ease;
+  cursor:pointer;
+  white-space:nowrap;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.pill:hover{transform:translateY(-1px);background:rgba(17,19,24,.06)}
+.pill.active{border-color:rgba(34,197,94,.60); background:rgba(34,197,94,.16)}
+.pill.iconOnly{padding:9px 10px}
+.pill.mini{padding:7px 10px;font-size:12px}
+.pill.menuDisabled{
+  opacity:.55;
+  cursor:not-allowed;
+  background:rgba(17,19,24,.02);
+}
+
+/* Account dropdown (details) */
+details.navDrop,
+details.studioDrop,
+details[data-dd="1"]{
+  position:relative;
+  display:inline-flex;
+}
+details.navDrop > summary,
+details.studioDrop > summary,
+details[data-dd="1"] > summary{
+  list-style:none;
+}
+details.navDrop > summary::-webkit-details-marker,
+details.studioDrop > summary::-webkit-details-marker,
+details[data-dd="1"] > summary::-webkit-details-marker{
+  display:none
+}
+
+details.navDrop[open] > summary,
+details.studioDrop[open] > summary,
+details[data-dd="1"][open] > summary{
+  border-color:rgba(34,197,94,.45);
+  background:rgba(34,197,94,.12);
+}
+
+.navMenu,
+.studioMenu{
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  width:min(320px, 92vw);
+  padding:12px;
+  border-radius:18px;
+  border:1px solid rgba(17,19,24,.14);
+  background:rgba(255,255,255,.92);
+  -webkit-backdrop-filter:saturate(1.2) blur(14px);
+  backdrop-filter:saturate(1.2) blur(14px);
+  box-shadow: 0 16px 50px rgba(17,19,24,.18);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  z-index:40;
+}
+details.navDrop:not([open]) .navMenu{display:none}
+details.studioDrop:not([open]) .studioMenu{display:none}
+details[data-dd="1"]:not([open]) .navMenu{display:none}
+
+.menuLabel{
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  color:rgba(17,19,24,.55);
+  padding:2px 4px 0;
+}
+.menuSep{
+  height:1px;
+  background:rgba(17,19,24,.10);
+  margin:2px 0;
+}
+.navMenu .pill,
+.navMenu .btn,
+.studioMenu .pill,
+.studioMenu .btn{
+  width:100%;
+  justify-content:flex-start;
+}
+
+/* ============================================================
+Layout primitives
+============================================================ */
+.main{
+  max-width:var(--max);
+  margin:0 auto;
+  padding:18px 16px calc(18px + var(--safeBottom));
+}
+
+/* Wide main (use on studio-like pages) */
+.main.mainWide{
+  max-width:min(var(--maxWide), 98vw);
+}
+
+.h1{
+  font-size:36px;
+  line-height:1.05;
+  letter-spacing:-.8px;
+  margin:10px 0 8px 0;
+}
+.sub{margin:0 0 14px 0;color:var(--muted);font-weight:650}
+
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.82));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:14px;
+  overflow:hidden;
+}
+.cardNoPad{padding:0}
+.hr{height:1px;background:var(--line);margin:12px 0}
+
+.note{
+  font-size:12px;
+  color:rgba(17,19,24,.58);
+  font-weight:650;
+  line-height:1.45;
+}
+.tiny{font-size:12px; color:rgba(17,19,24,.62)}
+.small{font-size:13px; color:rgba(17,19,24,.78); font-weight:650}
+.muted{color:var(--muted)}
+.mono,
+.monoSmall{
+  font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.monoSmall{font-size:12px}
+
+/* Utility layout */
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:10px}
+.center{display:flex;align-items:center;justify-content:center}
+.right{display:flex;align-items:center;justify-content:flex-end}
+
+/* ============================================================
+Badges + Buttons
+============================================================ */
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(17,19,24,.04);
+  font-weight:900;
+  font-size:12px;
+  color:rgba(17,19,24,.75);
+  white-space:nowrap;
+}
+.badge.ok,.badge.good{border-color:rgba(22,163,74,.30);background:rgba(34,197,94,.14);color:#0a5a2a}
+.badge.warn{border-color:rgba(184,107,0,.30);background:rgba(255,153,0,.14);color:#7a3f00}
+.badge.bad,.badge.danger{border-color:rgba(216,27,96,.30);background:rgba(216,27,96,.12);color:#7a123c}
+.badge.prio{border-color:rgba(34,197,94,.32);background:rgba(34,197,94,.10);color:rgba(17,19,24,.76)}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(255,255,255,.70);
+  font-weight:850;
+  font-size:13px;
+  cursor:pointer;
+  transition:.15s ease;
+  user-select:none;
+}
+.btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.88)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+/* Button label helper (keeps icon + text centered as one unit) */
+.btn .btnLabel{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+}
+
+/* Inline SVGs: remove baseline gap for cleaner alignment */
+.btn svg,
+.pill svg,
+.iconBtn svg,
+.chip svg,
+.modeTab svg{
+  display:block;
+}
+
+.btn.primary{
+  border:0;
+  background:linear-gradient(135deg, var(--accent2), var(--accent));
+  color:#0b1020;
+  box-shadow: 0 12px 26px rgba(34,197,94,.22);
+}
+.btn.primary:hover{filter:brightness(1.02)}
+.btn.ghost{ background:rgba(17,19,24,.04); }
+.btn.danger{
+  border:1px solid rgba(216,27,96,.30);
+  background:rgba(216,27,96,.10);
+}
+.btn.small{ padding:9px 10px; font-size:12px; font-weight:900; }
+
+.iconBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;height:34px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(255,255,255,.70);
+  cursor:pointer;
+  transition:.15s ease;
+}
+.iconBtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.88)}
+.iconBtn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+/* Context chip (NOT the same as keyword .chip!) */
+.contextChip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(255,255,255,.72);
+  font-weight:850;
+  font-size:12px;
+  color:rgba(17,19,24,.78);
+  max-width:100%;
+}
+.contextChip .dot{
+  width:8px;height:8px;border-radius:999px;background:rgba(34,197,94,.85);
+  box-shadow:0 0 0 4px rgba(34,197,94,.18);
+}
+
+/* ============================================================
+Inputs
+============================================================ */
+.textInput,
+select,
+textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(17,19,24,.14);
+  background:rgba(255,255,255,.92);
+  color:var(--text);
+  font-size:14px;
+  font-weight:650;
+  outline:none;
+}
+textarea{min-height:120px;resize:vertical}
+select{cursor:pointer}
+.textInput:focus,
+select:focus,
+textarea:focus{box-shadow: var(--focusRing); border-color: rgba(34,197,94,.40)}
+
+.field{display:flex;flex-direction:column;gap:8px}
+.fieldLabel,
+.label{
+  font-size:12px;
+  font-weight:950;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  color:rgba(17,19,24,.55);
+}
+.hint{font-size:12px;color:rgba(17,19,24,.58);font-weight:650;line-height:1.45}
+
+/* ============================================================
+Chips / Tags (Keywords etc.)
+============================================================ */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(17,19,24,.04);
+  font-weight:850;
+  font-size:13px;
+  cursor:pointer;
+  user-select:none;
+  transition:.12s ease;
+}
+.chip:hover{transform:translateY(-1px)}
+.chip.good{border-color:rgba(22,163,74,.30); background:rgba(34,197,94,.14); color:#0a5a2a}
+.chip.warn{border-color:rgba(184,107,0,.30); background:rgba(255,153,0,.14); color:#7a3f00}
+.chip.bad{border-color:rgba(216,27,96,.30); background:rgba(216,27,96,.12); color:#7a123c}
+.chip .plus{
+  width:18px;height:18px;border-radius:8px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid rgba(17,19,24,.18);
+  background:rgba(255,255,255,.55);
+  font-weight:950;
+}
+
+/* ============================================================
+Tabs
+============================================================ */
+.tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tabBtn{
+  padding:9px 12px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(17,19,24,.04);
+  font-weight:900;
+  font-size:13px;
+  cursor:pointer;
+  transition:.12s ease;
+}
+.tabBtn:hover{transform:translateY(-1px)}
+.tabBtn.active{border-color:rgba(34,197,94,.60); background:rgba(34,197,94,.16)}
+
+/* ============================================================
+Errors (top alert)
+============================================================ */
+.errorTop{
+  display:none;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(216,27,96,.22);
+  background:rgba(216,27,96,.10);
+  color:rgba(85,10,40,.95);
+  font-weight:800;
+  font-size:13px;
+  line-height:1.35;
+  white-space:pre-wrap;
+}
+
+/* ============================================================
+Modal
+============================================================ */
+.modalBackdrop{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px 14px;
+  background:rgba(15,18,24,.42);
+  backdrop-filter: blur(4px);
+  z-index:80;
+}
+.modalCard{
+  width:min(920px, 96vw);
+  max-height:min(86vh, 920px);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.92);
+  box-shadow: 0 22px 70px rgba(17,19,24,.34);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.modalHeader{
+  padding:14px 14px 10px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  border-bottom:1px solid rgba(17,19,24,.10);
+}
+.modalTitle{
+  font-weight:950;
+  letter-spacing:-.2px;
+}
+.modalScroll{
+  padding:12px 14px;
+  overflow:auto;
+}
+.modalActions{
+  padding:12px 14px;
+  border-top:1px solid rgba(17,19,24,.10);
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.modalMonoBox{
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(17,19,24,.03);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+/* ============================================================
+Toasts
+============================================================ */
+.toastWrap{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  z-index:90;
+  padding-bottom: var(--safeBottom);
+}
+.toast{
+  width:min(360px, 92vw);
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(255,255,255,.92);
+  box-shadow: 0 14px 40px rgba(17,19,24,.22);
+  transition:.2s ease;
+  font-weight:750;
+  color:rgba(17,19,24,.80);
+}
+.toast .t{
+  font-weight:950;
+  margin-bottom:4px;
+}
+.toast.good{border-color:rgba(22,163,74,.26);background:rgba(34,197,94,.14)}
+.toast.warn{border-color:rgba(184,107,0,.24);background:rgba(255,153,0,.12)}
+.toast.bad{border-color:rgba(216,27,96,.24);background:rgba(216,27,96,.10)}
+
+/* ============================================================
+CV Studio reusable components
+  - These are additive. If cv.html has its own styles, those override.
+============================================================ */
+
+/* Studio mode bar (like resume.io top bar inside the studio) */
+.studioBar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin: 10px 0 14px;
+  padding: 10px 10px;
+  border:1px solid rgba(17,19,24,.10);
+  border-radius:16px;
+  background: rgba(255,255,255,.72);
+  -webkit-backdrop-filter:saturate(1.2) blur(10px);
+  backdrop-filter:saturate(1.2) blur(10px);
+}
+.studioTabsTop{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.modeTab{
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(255,255,255,.66);
+  border-radius:999px;
+  padding:10px 14px;
+  font-weight:900;
+  color:rgba(17,19,24,.78);
+  cursor:pointer;
+  transition:.15s ease;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.modeTab:hover{ transform:translateY(-1px); background:rgba(255,255,255,.78); }
+.modeTab.active{ border-color:rgba(34,197,94,.55); background:rgba(34,197,94,.14); color:rgba(10,70,35,.95); }
+.modeTab.disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+/* CV â€œpaperâ€ (A4) + zoom HUD */
+.paperWrap{
+  display:flex;
+  justify-content:center;
+  overflow:auto;
+}
+.paperZoom{
+  transform-origin: top center;
+}
+.paperA4{
+  background:#fff;
+  border:1px solid rgba(17,19,24,.10);
+  border-radius:10px;
+  box-shadow: 0 18px 60px rgba(17,19,24,.14);
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 16mm 14mm;
+}
+.zoomHud{
+  position: sticky;
+  bottom: 10px;
+  z-index: 5;
+  margin: 12px auto 0;
+  width: fit-content;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(255,255,255,.78);
+  -webkit-backdrop-filter:saturate(1.2) blur(12px);
+  backdrop-filter:saturate(1.2) blur(12px);
+  box-shadow: 0 12px 34px rgba(17,19,24,.10);
+}
+.zoomHud .zVal{
+  font-weight:950;
+  font-size:12px;
+  color:rgba(17,19,24,.74);
+  min-width:58px;
+  text-align:center;
+}
+
+/* Studio â€œStep 1â€ gate (two-card chooser) */
+.gateCards{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:12px;
+  margin-top: 12px;
+}
+@media (min-width: 860px){
+  .gateCards{ grid-template-columns: 1fr 1fr; }
+}
+.gateCard{
+  appearance:none;
+  width:100%;
+  text-align:left;
+  padding:14px 14px;
+  border-radius:18px;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(255,255,255,.74);
+  box-shadow: 0 12px 34px rgba(17,19,24,.10);
+  cursor:pointer;
+  transition:.15s ease;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-height: 118px;
+}
+.gateCard:hover{
+  transform: translateY(-2px);
+  background: rgba(255,255,255,.86);
+}
+.gateCardTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.gateCardTitle{
+  font-weight:980;
+  font-size:15px;
+  letter-spacing:-.2px;
+}
+.gateCardDesc{
+  color: rgba(17,19,24,.62);
+  font-weight:650;
+  line-height:1.45;
+  font-size:13px;
+}
+.gateCardHint{
+  color: rgba(17,19,24,.52);
+  font-weight:750;
+  font-size:12px;
+}
+
+/* Print: ensure paper prints cleanly */
+@media print{
+  .topbar, .studioBar, .zoomHud, .nav, .navlinks, details, button, .btn, .pill { display:none !important; }
+  body{ background:#fff !important; }
+  .paperA4{ box-shadow:none !important; border:none !important; width:210mm !important; min-height:297mm !important; }
+}
+/* ============================================================
+   CTA shine (animated sheen)
+   - Add class "cta" to any .btn to give it the subtle shiny sweep.
+   - Works for <button class="btn cta"> and <a class="btn cta">.
+   ============================================================ */
+
+.btn.cta{
+  position: relative;
+  overflow: hidden;
+  isolation: isolate; /* keep the sheen contained */
+}
+
+/* The moving sheen sits above the background but below the label/icon */
+.btn.cta::before{
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -45%;
+  width: 45%;
+  height: 220%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,var(--cta-shine-opacity, .55)) 50%,
+    rgba(255,255,255,0) 100%
+  );
+  transform: translateX(-180%) rotate(18deg);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  filter: blur(.2px);
+  animation: jm_btn_shine var(--cta-shine-duration, 6.5s) ease-in-out infinite;
+}
+
+/* Make it feel more responsive on hover/focus */
+.btn.cta:hover::before,
+.btn.cta:focus-visible::before{
+  animation-duration: 2.8s;
+}
+
+.btn.cta:disabled::before,
+.btn.cta[aria-disabled="true"]::before{
+  animation: none;
+  opacity: 0;
+}
+
+@keyframes jm_btn_shine{
+  0%   { transform: translateX(-180%) rotate(18deg); opacity: 0; }
+  10%  { opacity: .35; }
+  20%  { transform: translateX(320%) rotate(18deg); opacity: 0; }
+  100% { transform: translateX(320%) rotate(18deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .btn.cta::before{ animation: none; opacity: 0; }
+}

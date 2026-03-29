@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>CV Studio • Upload CV</title>
+  <meta name="description" content="Upload your base CV once to unlock CV tailoring from pasted job descriptions."/>
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="./shared.css"/>
+
+  <style>
+
+/* Page-specific layout for Profile (shared.css provides the base UI) */
+
+.grid{
+  display:grid;
+  grid-template-columns: 1.35fr .65fr;
+  gap:14px;
+  align-items:start;
+}
+@media (max-width:1100px){
+  .grid{grid-template-columns:1fr}
+}
+
+/* Cards with internal sections */
+.cardNoPad{padding:0}
+.sectionHeader{
+  padding:14px 14px 0 14px;
+}
+.sectionBody{
+  padding:14px;
+}
+.stepTitle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.stepTitle h2{
+  margin:0;
+  font-size:16px;
+  font-weight:950;
+  letter-spacing:-.2px;
+}
+
+/* Form layout */
+.field{display:grid; gap:8px; margin-top:12px}
+.field label{font-size:13px; font-weight:850; color:rgba(17,19,24,.72)}
+.field .small{margin-top:0}
+.fieldRow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+@media (max-width:700px){
+  .fieldRow{grid-template-columns:1fr}
+}
+
+/* Progress UI (CV upload + OCR) */
+.progressWrap{
+  margin-top:12px;
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(17,19,24,.03);
+  border-radius:16px;
+  padding:12px;
+}
+.progressTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.progressBar{
+  height:10px;
+  border-radius:999px;
+  background:rgba(17,19,24,.08);
+  overflow:hidden;
+  border:1px solid rgba(17,19,24,.10);
+  margin-top:10px;
+}
+
+/* Progress fill element (used by this page via id) */
+#cvProgressFill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, rgba(34,197,94,.85), rgba(22,163,74,.85));
+  border-radius:999px;
+  transition:width .25s ease;
+}
+
+.progressFill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, rgba(34,197,94,.85), rgba(22,163,74,.85));
+  border-radius:999px;
+  transition:width .25s ease;
+}
+.progressHint{
+  margin-top:10px;
+  font-size:12px;
+  color:rgba(17,19,24,.58);
+  font-weight:650;
+  line-height:1.45;
+}
+
+/* KPIs (right column) */
+.kpiCol{display:grid; gap:10px}
+.kpiRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+  border-top:1px solid rgba(17,19,24,.08);
+}
+.kpiRow:first-child{border-top:0;padding-top:0}
+.kpiName{font-size:12px; color:rgba(17,19,24,.58); font-weight:800}
+.kpiVal{font-size:12px; font-weight:950}
+.kpiVal.ok{color:#0a3d1f}
+.kpiVal.warn{color:#5a3b00}
+.kpiVal.bad{color:#5a1130}
+.mono{
+  font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size:12px;
+  word-break:break-all;
+  color:rgba(17,19,24,.64);
+}
+
+/* Small helper box */
+.helpBox{
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(17,19,24,.03);
+}
+
+/* Chips (AI suggestions) */
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 10px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.14);
+  background:rgba(17,19,24,.03);
+  cursor:pointer;
+  user-select:none;
+  font-weight:850;
+  font-size:12px;
+  opacity:0;
+  transform:translateY(6px);
+  animation:chipIn .28s ease forwards;
+}
+.chip.selected{
+  border-color:rgba(34,197,94,.55);
+  background:rgba(34,197,94,.14);
+}
+.chip.aiTag{
+  border-color:rgba(34,197,94,.55);
+  background:rgba(34,197,94,.10);
+  cursor:default;
+}
+@keyframes chipIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Step complete (subtle dim) */
+.stepDone{
+  opacity:.78;
+  filter:saturate(.92);
+}
+.stepDone .helpBox, .stepDone .progressWrap{opacity:.9}
+
+/* AI card highlight */
+.aiCard{
+  border:1px solid rgba(34,197,94,.28);
+  background:
+    radial-gradient(700px 220px at 15% 0%, rgba(34,197,94,.18), transparent 60%),
+    radial-gradient(700px 220px at 85% 20%, rgba(22,163,74,.12), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.82));
+}
+.aiGlow{box-shadow:0 18px 52px rgba(34,197,94,.12)}
+
+/* Compatibility: older button variants used in this page */
+.btn.cta{ /* treat as primary */
+  border-color:rgba(34,197,94,.45);
+  background:linear-gradient(180deg, rgba(34,197,94,.16), rgba(34,197,94,.10));
+}
+.btn.good{ /* soft green */
+  border-color:rgba(34,197,94,.38);
+  background:rgba(34,197,94,.10);
+}
+
+/* Small pill variant used for AI labels */
+.pill.mini{
+  padding:7px 10px;
+  font-size:12px;
+  font-weight:850;
+}
+
+
+/* Link-like button (used for Regenerate) */
+.linkBtn{
+  background:transparent;
+  border:0;
+  padding:0;
+  font:inherit;
+  color:rgba(22,163,74,.95);
+  font-weight:950;
+  cursor:pointer;
+}
+.linkBtn:hover{ text-decoration:underline }
+.linkBtn:disabled{ opacity:.55; cursor:not-allowed; text-decoration:none }
+
+  
+
+/* ============================================================
+Activity log modal (Account dropdown)
+============================================================ */
+.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+.activityList{ display:flex; flex-direction:column; gap:10px; }
+.activityItem{
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(17,19,24,.03);
+  border-radius:14px;
+  padding:10px 12px;
+}
+.activityTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.activityTitle{ font-weight:950; }
+.activityMeta{
+  margin-top:6px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  color:rgba(17,19,24,.60);
+  font-size:12px;
+  font-weight:750;
+}
+
+.iconX{
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(17,19,24,.04);
+  border-radius:999px;
+  padding:7px 10px;
+  font-weight:950;
+  cursor:pointer;
+}
+
+
+
+/* ============================================================
+CV upload dropzone + tiny spinner
+============================================================ */
+.dropzone{
+  border:2px dashed rgba(17,19,24,.18);
+  background:rgba(255,255,255,.62);
+  border-radius:18px;
+  padding:14px;
+  cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+}
+.dropzone:hover{
+  transform:translateY(-1px);
+  background:rgba(255,255,255,.78);
+  border-color:rgba(17,19,24,.28);
+}
+.dropzone.dragOver{
+  border-color:rgba(34,197,94,.60);
+  background:rgba(34,197,94,.08);
+  box-shadow:0 0 0 4px rgba(34,197,94,.14);
+}
+.dzTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.dzTitle{ font-size:14px; font-weight:950; letter-spacing:-.15px; }
+.dzSub{ margin-top:4px; font-size:13px; font-weight:750; color:rgba(17,19,24,.60); line-height:1.35; }
+.dzMeta{ margin-top:10px; font-size:12px; font-weight:650; color:rgba(17,19,24,.56); line-height:1.45; }
+
+.spin{
+  display:inline-block;
+  width:14px;
+  height:14px;
+  border-radius:999px;
+  border:2px solid rgba(17,19,24,.16);
+  border-top-color:rgba(34,197,94,.85);
+  animation:spin 1s linear infinite;
+  vertical-align:-2px;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* Tiny spinner (used for background job prefetch status) */
+.spinner{
+  width:14px;height:14px;
+  border-radius:999px;
+  border:2px solid rgba(17,19,24,.18);
+  border-top-color: rgba(34,197,94,.92);
+  animation: spin .9s linear infinite;
+}
+@keyframes spin{ to { transform: rotate(360deg); } }
+
+/* Make quick-choice chips feel like controls */
+.chip.quick{
+  font-size:12px;
+  padding:7px 10px;
+  font-weight:900;
+}
+
+
+
+/* ============================================================
+Step 2 (Matched jobs) — form facelift
+============================================================ */
+#prefsCard .sectionBody{ padding-top:12px; }
+
+#prefsCard .prefsForm{
+  display:grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap:14px;
+  align-items:start;
+  margin-top:2px;
+}
+@media (max-width:900px){
+  #prefsCard .prefsForm{ grid-template-columns:1fr; }
+}
+
+#prefsCard .formGroup{
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(17,19,24,.02);
+  border-radius:20px;
+  padding:12px;
+}
+
+#prefsCard .formGroupHeader{ margin-bottom:10px; }
+#prefsCard .formGroupTitle{
+  font-size:13px;
+  font-weight:950;
+  letter-spacing:-.15px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+#prefsCard .formGroupSub{
+  margin-top:4px;
+  font-size:12px;
+  color:rgba(17,19,24,.60);
+  font-weight:750;
+  line-height:1.35;
+}
+
+#prefsCard .formGroup .field{ margin-top:10px; }
+#prefsCard .formGroup .field:first-of-type{ margin-top:0; }
+
+/* When a field is in a fieldRow (2-col), keep spacing clean */
+#prefsCard .formGroup .fieldRow{ margin-top:10px; }
+#prefsCard .formGroup .fieldRow .field{ margin-top:0; }
+
+#prefsCard .fieldCard{
+  border:1px solid rgba(17,19,24,.10);
+  background:rgba(255,255,255,.70);
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 1px 0 rgba(17,19,24,.02);
+  transition:
+    box-shadow .12s ease,
+    transform .12s ease,
+    border-color .12s ease,
+    background .12s ease;
+}
+#prefsCard .fieldCard:focus-within{
+  border-color:rgba(34,197,94,.55);
+  background:rgba(34,197,94,.06);
+  box-shadow:0 0 0 4px rgba(34,197,94,.12), 0 12px 30px rgba(17,19,24,.07);
+  transform:translateY(-1px);
+}
+
+#prefsCard .labelRow{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#prefsCard .labelRow label{
+  margin:0;
+  font-size:13px;
+  font-weight:950;
+  color:rgba(17,19,24,.78);
+}
+
+#prefsCard .fieldTag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:950;
+  border:1px solid rgba(17,19,24,.12);
+  background:rgba(17,19,24,.03);
+  color:rgba(17,19,24,.66);
+  white-space:nowrap;
+}
+#prefsCard .fieldTag.req{
+  border-color: rgba(34,197,94,.40);
+  background: rgba(34,197,94,.12);
+  color: rgba(10,61,31,.95);
+}
+#prefsCard .fieldTag.opt{ opacity:.92; }
+
+#prefsCard input,
+#prefsCard textarea,
+#prefsCard select{
+  width:100%;
+  border-radius:14px;
+  border:1px solid rgba(17,19,24,.14);
+  background:rgba(255,255,255,.92);
+  padding:11px 12px;
+  font-size:14px;
+  font-weight:850;
+  color:rgba(17,19,24,.92);
+  outline:none;
+  transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;
+}
+#prefsCard textarea{
+  min-height:92px;
+  resize:vertical;
+  line-height:1.35;
+}
+#prefsCard input:focus,
+#prefsCard textarea:focus,
+#prefsCard select:focus{
+  border-color:rgba(34,197,94,.68);
+  box-shadow:0 0 0 4px rgba(34,197,94,.14);
+  background:#fff;
+}
+#prefsCard ::placeholder{
+  color:rgba(17,19,24,.40);
+  font-weight:800;
+}
+
+#prefsCard .helper{
+  margin-top:8px;
+  color:rgba(17,19,24,.58);
+  font-weight:750;
+  line-height:1.45;
+}
+
+/* Chips inside fields (keep them feeling like controls) */
+#prefsCard .chip.quick{
+  background:rgba(255,255,255,.72);
+  border-color:rgba(17,19,24,.14);
+}
+#prefsCard .chip.quick:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(17,19,24,.06);
+  background:rgba(255,255,255,.92);
+  border-color:rgba(17,19,24,.22);
+}
+
+/* Footer area */
+#prefsCard .prefsFooter{
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid rgba(17,19,24,.08);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+#prefsCard .prefsFooter .actions{ margin-top:0; }
+#prefsCard .prefsFooter .small{ margin-top:0; }
+#prefsCard #autosaveHint,
+#prefsCard #continueHint{ max-width: 720px; }
+
+</style>
+</head>
+
+<body>
+<header class="topbar">
+  <nav class="nav">
+    <a class="brand" href="./index.html" data-nav="1" aria-label="Home">
+      <span class="logo" aria-hidden="true"></span>
+      <span>CV Studio</span>
+    </a>
+
+    <div class="navlinks">
+<a class="pill active" href="./profile.html" data-nav="1">Upload CV</a>
+      <a class="pill" href="./cv.html" data-nav="1">Tailor CV</a>
+
+      <details class="navDrop" id="navAccount" style="display:none">
+        <summary class="pill" aria-label="Account menu">
+          <span id="navAccountLabel">Account</span>
+          <span aria-hidden="true">▾</span>
+        </summary>
+
+        <div class="navMenu" role="menu" aria-label="Account menu">
+          <div class="menuLabel">Account</div>
+          <a class="pill active" href="./profile.html" data-nav="1" role="menuitem">Upload CV</a>
+          <a class="pill" href="./cv.html" data-nav="1" role="menuitem">Tailor CV</a>
+
+          <div class="menuSep" role="separator"></div>
+          <button class="btn danger" id="navLogout" type="button" role="menuitem">Logout</button>
+        </div>
+      </details>
+
+      <a class="pill" href="./signup.html" id="navSignIn" data-nav="1">Sign in</a>
+    </div>
+  </nav>
+</header>
+<main class="main">
+<h1 class="h1">Upload CV</h1>
+<p class="sub" id="subLine">Loading…</p>
+<div class="errorTop" id="errorTop"></div>
+<div class="grid">
+<section class="card cardNoPad" id="step1Card">
+<div class="sectionHeader">
+<div class="stepTitle">
+<h2>Step 1: Upload your base CV</h2>
+<span class="badge" id="cvStatusBadge">Loading</span>
+</div>
+<p class="small">Upload the CV you want to tailor from. PDF works best because the existing OCR flow can extract and structure the text more reliably.</p>
+</div>
+<div class="sectionBody">
+<div class="dropzone" id="cvDropzone" tabindex="0" role="button" aria-label="Upload CV">
+  <div class="dzTop">
+    <div style="min-width:0">
+      <div class="dzTitle">Drop your CV here</div>
+      <div class="dzSub">PDF recommended for best results (OCR + AI).</div>
+    </div>
+    <button class="btn primary" id="browseCvBtn" type="button">Choose file</button>
+  </div>
+  <div class="dzMeta">Supported: PDF/DOC/DOCX · Max 9MB · Stored securely for tailoring + job matching.</div>
+</div>
+<input accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" id="cvFile" type="file" style="display:none"/>
+
+<div class="progressWrap" id="cvProgressWrap" style="display:none">
+<div class="small" id="cvProgressText">Preparing…</div>
+<div aria-label="Upload progress" class="progressBar">
+<div id="cvProgressFill"></div>
+</div>
+<div class="small" id="cvProgressHint" style="margin-top:8px"></div>
+</div>
+<div class="helpBox" style="margin-top:12px">
+<div class="small" id="cvHint">No CV uploaded yet.</div>
+<div class="small" id="ocrHint" style="margin-top:6px"></div>
+<div class="actions" style="margin-top:10px">
+  <button class="btn" id="retryOcrBtn" type="button" style="display:none">Retry OCR</button>
+</div>
+</div>
+<div class="hr"></div>
+<div class="helpBox aiCard aiGlow" id="aiBox" style="display:none">
+<div class="stepTitle">
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<h2 style="margin:0;font-size:16px">AI job title suggestions (auto)</h2>
+<button class="linkBtn" id="aiRegenerateLink" style="display:none" type="button">Regenerate</button>
+</div>
+<span class="badge" id="aiStatusBadge">Locked</span>
+</div>
+<div class="small" id="aiHint" style="margin-top:6px">We generate suggestions automatically once your CV text is ready (and save them to your account for job matching). You can regenerate anytime.</div>
+<div class="actions" style="margin-top:12px">
+<button class="btn cta" disabled="" id="aiGenerateBtn" type="button">Generate now</button>
+<button class="btn" disabled="" id="aiApplyBtn" type="button">Update job titles below</button>
+</div>
+<div id="aiTitlesWrap" style="margin-top:12px;display:none"></div>
+<div class="hr"></div>
+<div id="aiAltWrap" style="display:none">
+<div class="small" style="font-weight:850">Alternative roles based on your skills</div>
+<div class="chips" id="aiAltChips" style="margin-top:10px"></div>
+</div>
+<div id="aiSkillsWrap" style="display:none;margin-top:14px">
+<div class="small" style="font-weight:850">Top skills (core + tools)</div>
+<div class="chips" id="aiSkillsChips" style="margin-top:10px"></div>
+</div>
+</div>
+<div class="hr"></div>
+<div class="helpBox">
+<div class="small"><strong>Tip:</strong> If you upload DOC/DOCX, OCR might not run. A PDF gives the best results.</div>
+</div>
+</div>
+</section>
+<aside class="card">
+<div class="sectionHeader">
+<div class="stepTitle">
+<h2>CV setup status</h2>
+<span class="badge" id="signedInBadge">Checking…</span>
+</div>
+<p class="small">This status comes from the shared backend and shows whether your CV upload is ready for tailoring.</p>
+</div>
+<div class="sectionBody">
+<div class="kpiCol">
+<div class="kpiRow">
+<div class="kpiName">Signed in</div>
+<div class="kpiVal" id="kSigned">…</div>
+</div>
+<div class="kpiRow">
+<div class="kpiName">Customer ID</div>
+<div class="kpiVal mono" id="kCustomerId">—</div>
+</div>
+<div class="kpiRow">
+<div class="kpiName">Profile complete</div>
+<div class="kpiVal" id="kProfile">…</div>
+</div>
+<div class="kpiRow" style="display:none">
+<div class="kpiName">Plan selected</div>
+<div class="kpiVal" id="kPlan">…</div>
+</div>
+<div class="kpiRow">
+<div class="kpiName">CV uploaded</div>
+<div class="kpiVal" id="kCv">…</div>
+</div>
+<div class="kpiRow">
+<div class="kpiName">OCR status</div>
+<div class="kpiVal" id="kOcr">…</div>
+</div>
+</div>
+<div class="hr"></div>
+<div class="actions">
+<button class="btn primary" id="openCvBtn" type="button">Open CV Studio</button>
+</div>
+
+<div class="hr"></div>
+<div class="helpBox" id="gmailVerifyBox" style="display:none">
+  <div class="stepTitle">
+    <h2>Gmail sending check</h2>
+    <span class="badge" id="gmailStatusBadge">Not checked</span>
+  </div>
+  <div class="small" id="gmailHint" style="margin-top:8px">Connect Gmail and send a test email to yourself. This confirms Gmail delivery end-to-end before you rely on it.</div>
+  <div class="mono" id="gmailMeta" style="margin-top:8px;display:none"></div>
+  <div class="actions" style="margin-top:10px">
+    <button class="btn primary" id="gmailVerifyBtn" type="button">Connect Gmail &amp; send test</button>
+    <button class="btn" id="gmailSendAgainBtn" type="button" style="display:none">Send another test</button>
+  </div>
+</div>
+
+<details class="helpBox" style="margin-top:12px;display:none">
+  <summary class="small" style="cursor:pointer;font-weight:850">More links</summary>
+  <div class="actions" style="margin-top:10px">
+    <a class="btn" data-nav="1" href="./index.html">Home</a>
+    <a class="btn" data-nav="1" href="./cv.html">Tailor CV</a>
+  </div>
+</details>
+</div>
+</aside>
+<section class="card cardNoPad" id="prefsCard" style="grid-column:1/-1;display:none">
+<div class="sectionHeader">
+<div class="stepTitle">
+<h2>Step 2 (recommended): Enable matched jobs</h2>
+<div class="row" style="gap:8px">
+<span class="badge" id="jobsPrefetchBadge" style="display:none">Fetching jobs…</span>
+<span class="badge" id="saveStatusBadge">Not saved</span>
+</div>
+</div>
+<p class="small">We already store your AI job titles in the background. Add your location — preferences auto‑save as you type — so we can fetch matched jobs automatically (Jobs feed + Auto‑Apply later).</p>
+<div class="row" id="jobsPrefetchRow" style="display:none; gap:10px; margin-top:10px">
+  <div class="spinner" aria-hidden="true"></div>
+  <div class="small" id="jobsPrefetchText">Fetching matched jobs in the background…</div>
+</div>
+</div>
+<div class="sectionBody">
+
+  <div class="prefsForm" role="form" aria-label="Matched jobs preferences">
+    <!-- Left column: what roles -->
+    <div class="formGroup">
+      <div class="formGroupHeader">
+        <div class="formGroupTitle">Role preferences</div>
+        <div class="formGroupSub">What kinds of jobs should we match you with?</div>
+      </div>
+
+      <div class="field fieldCard">
+        <div class="labelRow">
+          <label for="jobTitles">Desired job titles</label>
+          <span class="fieldTag req">Required</span>
+        </div>
+        <textarea id="jobTitles" placeholder="Receptionist, Front Desk Agent, Rezeption"></textarea>
+        <div class="small helper">Tip: add 3–5 variations to avoid “0 jobs found”.</div>
+
+        <div id="aiAppliedWrap" style="display:none;margin-top:10px">
+          <div class="small"><strong>AI-added titles</strong></div>
+          <div id="aiAppliedChips"></div>
+        </div>
+      </div>
+
+      <div class="field fieldCard">
+        <div class="labelRow">
+          <label for="industries">Industries</label>
+          <span class="fieldTag opt">Optional</span>
+        </div>
+        <input id="industries" placeholder="Healthtech, Hospitality, Wellness"/>
+        <div class="small helper">Leave blank if you want broad matches across industries.</div>
+      </div>
+    </div>
+
+    <!-- Right column: where to search -->
+    <div class="formGroup">
+      <div class="formGroupHeader">
+        <div class="formGroupTitle">Location &amp; radius</div>
+        <div class="formGroupSub">Where should we search (and how far are you willing to travel)?</div>
+      </div>
+
+      <div class="fieldRow">
+        <div class="field fieldCard">
+          <div class="labelRow">
+            <label for="country">Country</label>
+          </div>
+          <select id="country">
+            <option value="DE">Germany (DE)</option>
+            <option value="UK">United Kingdom (UK)</option>
+          </select>
+        </div>
+
+        <div class="field fieldCard">
+          <div class="labelRow">
+            <label for="radiusKm">Radius (km)</label>
+            <span class="fieldTag opt">Optional</span>
+          </div>
+          <input id="radiusKm" inputmode="numeric" placeholder="20"/>
+          <div class="row" id="radiusQuick" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+            <div class="chip quick" data-radius="10">10 km</div>
+            <div class="chip quick" data-radius="20">20 km</div>
+            <div class="chip quick" data-radius="50">50 km</div>
+            <div class="chip quick" data-radius="100">100 km</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field fieldCard">
+        <div class="labelRow">
+          <div class="row" style="gap:8px; align-items:flex-end; flex-wrap:wrap">
+            <label for="locations" style="margin:0">Main location(s)</label>
+            <span class="fieldTag req">Required</span>
+          </div>
+          <button class="btn small" id="useCvLocationBtn" type="button" style="display:none">Use CV location</button>
+        </div>
+
+        <input id="locations" placeholder="Berlin, Potsdam"/>
+
+        <div id="locSuggestWrap" style="display:none;margin-top:10px">
+          <div class="small"><strong>Suggested from your CV</strong> (click to apply)</div>
+          <div id="locSuggestChips"></div>
+        </div>
+
+        <div id="locQuickWrap" style="margin-top:10px">
+          <div class="small"><strong>Popular in Germany</strong></div>
+          <div id="locQuickChips"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prefsFooter">
+    <div class="actions">
+      <button class="btn primary" id="continueBtn" type="button">Open CV Studio</button>
+    </div>
+    <div style="display:grid; gap:8px; min-width:260px">
+      <div class="small" id="autosaveHint">Auto‑save is on. Preferences are saved as you type (and when you open CV Studio).</div>
+      <div class="small" id="continueHint"></div>
+    </div>
+  </div>
+
+</div>
+</section>
+</div>
+</main>
+
+  
+
+  <!-- Activity log modal (Account dropdown) -->
+  <div class="modalBackdrop" id="activityModal" style="display:none">
+    <div class="modalCard">
+      <div class="modalScroll">
+        <div class="modalHeader">
+          <div style="min-width:0">
+            <div class="modalTitle">Activity log</div>
+            <div class="small">Recent actions like queued, prioritized, skipped, applied, rejected.</div>
+          </div>
+          <button class="iconX" id="activityCloseX" type="button" aria-label="Close">✕</button>
+        </div>
+
+        <div class="row" style="margin-top:12px; justify-content:space-between">
+          <div class="row" style="gap:10px">
+            <label class="small" for="activityFilter">Filter</label>
+            <select id="activityFilter">
+              <option value="">All</option>
+              <option value="queued">Queued</option>
+              <option value="prioritized">Prioritized</option>
+              <option value="skipped">Skipped</option>
+              <option value="applied">Applied</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <button class="btn" id="activityRefresh" type="button">Refresh</button>
+        </div>
+
+        <div class="errorTop" id="activityError"></div>
+
+        <div id="activityWrap" style="margin-top:10px">
+          <div class="modalMonoBox">Loading…</div>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <a class="btn ghost" href="./cv.html" data-nav="1">Open CV Studio</a>
+        <button class="btn" id="activityClose" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts: order matters -->
+  <script>
+    window.CVStudio = window.CVStudio || {};
+    window.CVStudio.config = Object.assign({}, window.CVStudio.config || {}, {
+      API_BASE: "https://jobmejob.schoene-viktor.workers.dev",
+      PRODUCT_NAME: "CV Studio",
+      STANDALONE: true,
+      FEATURES: {
+        gmail: false,
+        jobMatching: false
+      }
+    });
+  </script>
+  <script src="./vendor/supabase-js-2.100.1.js"></script>
+  <script src="./auth.js"></script>
+  <script src="./shared.js"></script>
+
+  <script src="./profile.app.js"></script>
+</body>
+</html>

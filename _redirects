@@ -1,0 +1,5 @@
+/multipage/ / 301
+/multipage/* /:splat 301
+/dashboard.html /cv.html 302
+/jobs.html /cv.html 302
+/plan.html /profile.html 302

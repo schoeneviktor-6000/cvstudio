@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CV Studio | Sign in</title>
+<meta name="description" content="Sign in with Google to upload your base CV and tailor it to pasted job descriptions.">
+
+<style>
+:root{
+--bg:#f8fafc;
+--card:#ffffff;
+--card2:#f8fafc;
+--border:#e5e7eb;
+--text:#0f172a;
+--muted:#475569;
+--muted2:#64748b;
+--shadow:0 18px 40px rgba(15,23,42,.08);
+--g1:#22c55e;
+--g2:#16a34a;
+--link:#16a34a;
+--max:1060px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+margin:0;
+font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+color:var(--text);
+/* Soft fog background (matches your screenshot style; avoids harsh corner blobs) */
+background:
+radial-gradient(900px 520px at 50% -140px, rgba(34,197,94,.22), transparent 62%),
+radial-gradient(760px 480px at 15% 18%, rgba(34,197,94,.14), transparent 60%),
+radial-gradient(760px 480px at 85% 18%, rgba(22,163,74,.12), transparent 60%),
+radial-gradient(900px 520px at 50% 115%, rgba(34,197,94,.10), transparent 60%),
+var(--bg);
+background-attachment:fixed;
+}
+body::before{
+content:"";
+position:fixed;
+inset:-60px;
+background:
+radial-gradient(900px 520px at 50% -140px, rgba(34,197,94,.18), transparent 62%),
+radial-gradient(760px 480px at 15% 18%, rgba(34,197,94,.10), transparent 60%),
+radial-gradient(760px 480px at 85% 18%, rgba(22,163,74,.08), transparent 60%);
+filter:blur(18px);
+opacity:.9;
+pointer-events:none;
+z-index:-1;
+}
+a{color:inherit}
+.wrap{
+min-height:100%;
+display:grid;
+place-items:center;
+padding:28px 16px;
+}
+.shell{width:100%;max-width:var(--max)}
+.top{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+margin-bottom:18px;
+}
+.brand{
+display:flex;
+align-items:center;
+gap:12px;
+text-decoration:none;
+user-select:none;
+}
+.logo{
+width:42px;height:42px;border-radius:14px;
+background:linear-gradient(135deg,var(--g1),var(--g2));
+box-shadow:0 14px 35px rgba(34,197,94,.22);
+position:relative;
+overflow:hidden;
+}
+.logo::after{
+content:"";
+position:absolute;inset:-40%;
+background:linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+transform:rotate(20deg);
+animation:shine 2.8s ease-in-out infinite;
+}
+@keyframes shine{
+0%{transform:translateX(-55%) rotate(20deg);opacity:0}
+35%{opacity:1}
+70%{opacity:0}
+100%{transform:translateX(55%) rotate(20deg);opacity:0}
+}
+.wordmark{display:flex;flex-direction:column;gap:2px}
+.wordmark .name{font-weight:950;letter-spacing:.2px;font-size:14px;line-height:1.1}
+.wordmark .tag{font-weight:800;font-size:12px;color:var(--muted2);letter-spacing:.1px}
+.pill{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:9px 12px;
+border-radius:999px;
+border:1px solid var(--border);
+background:rgba(255,255,255,.9);
+font-weight:850;
+font-size:13px;
+color:var(--muted);
+}
+.grid{
+display:grid;
+grid-template-columns:1.1fr .9fr;
+gap:16px;
+align-items:stretch;
+}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.card{
+border-radius:24px;
+border:1px solid var(--border);
+background:linear-gradient(180deg, var(--card), var(--card2));
+box-shadow:var(--shadow);
+padding:22px;
+backdrop-filter: blur(8px);
+}
+.hero{padding:26px;position:relative;overflow:hidden}
+.hero::before{
+content:"";
+position:absolute;
+inset:-1px;
+background:
+radial-gradient(700px 280px at 10% 0%, rgba(34,197,94,.12), transparent 60%),
+radial-gradient(700px 280px at 90% 0%, rgba(22,163,74,.10), transparent 60%);
+pointer-events:none;
+}
+.hero > *{position:relative}
+h1{margin:0 0 8px;font-size:30px;letter-spacing:-.4px;line-height:1.15}
+.sub{margin:0 0 18px;color:var(--muted);line-height:1.55;max-width:58ch}
+.googleBtn{
+width:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:10px;
+padding:13px 16px;
+border-radius:14px;
+border:1px solid #d1d5db;
+background:#ffffff;
+color:#111827;
+font-weight:900;
+font-size:15px;
+cursor:pointer;
+transition:transform .12s ease, box-shadow .18s ease, opacity .18s ease;
+box-shadow:0 14px 30px rgba(15,23,42,.12);
+}
+.googleBtn:hover{transform:translateY(-1px);box-shadow:0 18px 38px rgba(15,23,42,.16)}
+.googleBtn:disabled{opacity:.62;cursor:not-allowed;transform:none;box-shadow:0 12px 26px rgba(15,23,42,.10)}
+.googleIcon{width:18px;height:18px;display:inline-block}
+.statusRow{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+padding:12px 14px;
+border-radius:16px;
+border:1px solid var(--border);
+background:#ffffff;
+margin-top:12px;
+}
+.statusLeft{display:flex;flex-direction:column;gap:2px}
+.statusLabel{font-size:12px;font-weight:900;color:var(--muted2);letter-spacing:.15px}
+.statusValue{font-size:13px;font-weight:900;color:var(--muted)}
+.linkBtn{
+appearance:none;border:0;background:transparent;
+padding:0;
+font-weight:900;
+color:var(--link);
+cursor:pointer;
+text-decoration:underline;
+text-underline-offset:3px;
+}
+.small{margin:0;color:var(--muted2);font-size:12px;line-height:1.55}
+.steps{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.step{
+display:flex;
+gap:12px;
+padding:12px 14px;
+border-radius:16px;
+border:1px solid var(--border);
+background:#f9fafb;
+}
+.num{
+width:28px;height:28px;border-radius:10px;
+display:grid;place-items:center;
+font-weight:950;
+background:linear-gradient(135deg, rgba(34,197,94,.20), rgba(22,163,74,.16));
+border:1px solid rgba(15,23,42,.06);
+}
+.stepText{display:flex;flex-direction:column;gap:2px}
+.stepTitle{font-weight:950}
+.stepDesc{color:var(--muted2);font-size:12px;line-height:1.45}
+.hr{height:1px;background:rgba(15,23,42,.08);margin:14px 0}
+.footer{margin-top:18px;text-align:center;color:var(--muted2);font-size:12px}
+.errorTop{
+display:none;
+margin:12px 0 0 0;
+padding:12px 14px;
+border-radius:16px;
+border:1px solid rgba(239,68,68,.22);
+background:rgba(239,68,68,.10);
+color:#5b1111;
+font-weight:800;
+white-space:pre-wrap;
+}
+.fadeIn{animation:fadeIn .35s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.leaving{opacity:.7;transform:translateY(6px);transition:all .18s ease}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+<div class="shell fadeIn">
+
+<div class="top">
+<a class="brand" href="index.html" data-nav="1">
+<span class="logo" aria-hidden="true"></span>
+<span class="wordmark">
+<span class="name">CV Studio</span>
+<span class="tag">Upload once. Tailor per role.</span>
+</span>
+</a>
+<span class="pill" id="topState">Not signed in</span>
+</div>
+
+<div class="errorTop" id="errorTop"></div>
+
+<div class="grid">
+<section class="card hero">
+<h1>Sign in to start tailoring</h1>
+<p class="sub">Use Google sign-in to open your workspace. After that you can upload your base CV once and paste any job description you want to tailor for.</p>
+
+<button class="googleBtn" id="btnGoogle" type="button">
+<span class="googleIcon" aria-hidden="true">
+<svg viewBox="0 0 48 48" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+<path fill="#EA4335" d="M24 9.5c3.5 0 6.7 1.2 9.2 3.5l6.9-6.9C35.9 2.3 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l8.1 6.3C12.6 13.6 17.8 9.5 24 9.5z"/>
+<path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.6c-.3 2-1.9 5-5.4 7l8.3 6.4c4.9-4.5 7.6-11.1 7.6-19.1z"/>
+<path fill="#FBBC05" d="M10.7 28.4c-.5-1.4-.8-2.9-.8-4.4s.3-3 .8-4.4l-8.1-6.3C.9 16.7 0 20.3 0 24s.9 7.3 2.6 10.7l8.1-6.3z"/>
+<path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.5-5.7l-8.3-6.4c-2.2 1.6-5.1 2.7-7.2 2.7-6.2 0-11.4-4.1-13.3-9.9l-8.1 6.3C6.5 42.6 14.6 48 24 48z"/>
+</svg>
+</span>
+<span id="btnGoogleText">Continue with Google</span>
+</button>
+
+<div class="statusRow" id="statusRow" style="display:none">
+<div class="statusLeft">
+<div class="statusLabel">Signed in as</div>
+<div class="statusValue" id="signedEmail">—</div>
+</div>
+<button class="linkBtn" id="btnSwitch" type="button">Switch</button>
+</div>
+
+<p class="small" id="hint" style="margin-top:10px;text-align:center">Your uploaded CV stays the source of truth. Tailoring rephrases and reorders, but does not invent experience.</p>
+</section>
+
+<aside class="card">
+<div style="font-weight:950;margin-bottom:8px">How it works</div>
+<div class="steps">
+<div class="step">
+<div class="num">1</div>
+<div class="stepText">
+<div class="stepTitle">Upload your base CV</div>
+<div class="stepDesc">Store one CV and let the existing OCR flow prepare it for tailoring.</div>
+</div>
+</div>
+<div class="step">
+<div class="num">2</div>
+<div class="stepText">
+<div class="stepTitle">Paste a job description</div>
+<div class="stepDesc">Use LinkedIn, company sites, recruiter emails, or copied PDF text.</div>
+</div>
+</div>
+<div class="step">
+<div class="num">3</div>
+<div class="stepText">
+<div class="stepTitle">Export the tailored CV</div>
+<div class="stepDesc">Review the preview, inspect ATS keywords, then copy, print, or download.</div>
+</div>
+</div>
+</div>
+<div class="hr"></div>
+<p class="small">If sign-in loops: Supabase Auth settings must allow this page URL as a redirect URL.</p>
+</aside>
+</div>
+
+<div class="footer">This repo powers the standalone `cvstudio.work` flow.</div>
+
+</div>
+</div>
+
+<script src="./vendor/supabase-js-2.100.1.js"></script>
+<script>
+"use strict";
+
+/* Config */
+const APP_CONFIG=(window.CVStudio && window.CVStudio.config) || (window.JobMeJob && window.JobMeJob.config) || (window.JobApplyAI && window.JobApplyAI.config) || null;
+const API_BASE=(APP_CONFIG && APP_CONFIG.API_BASE) || "https://jobmejob.schoene-viktor.workers.dev";
+const SUPABASE_URL="https://awlzvhcnjegfhjedswko.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3bHp2aGNuamVnZmhqZWRzd2tvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2NTE2OTgsImV4cCI6MjA4MjIyNzY5OH0.-UmHiVi0_g9tKDkr6ldfROeBrOk8hm18YVPRfnb8luY";
+
+/* Storage keys (reads legacy ja_, writes jm_) */
+const LS={
+userEmail:["jm_user_email","ja_user_email"],
+customerId:["jm_customer_id","ja_customer_id"],
+profileDone:["jm_profile_complete","ja_profile_complete"],
+plan:["jm_plan","ja_plan"]
+};
+const POST_AUTH_REDIRECT_KEY="jm_post_auth_redirect_v1";
+const POST_AUTH_REDIRECT_MAX_AGE_MS=30*60*1000;
+
+function $(id){return document.getElementById(id);}
+function showError(msg){
+const el=$("errorTop");
+if(!el) return;
+if(!msg){el.style.display="none";el.textContent="";return;}
+el.style.display="block";
+el.textContent=String(msg);
+}
+function setTopState(t){const el=$("topState");if(el) el.textContent=String(t||"");}
+function setHint(t){const el=$("hint");if(el) el.textContent=String(t||"");}
+function setGoogleButton(disabled,text){
+const btn=$("btnGoogle");
+const t=$("btnGoogleText");
+if(btn) btn.disabled=!!disabled;
+if(t && text) t.textContent=String(text);
+}
+function lsGetFirst(keys){
+for(const k of keys){
+const v=localStorage.getItem(k);
+if(v!==null && v!==undefined && v!=="") return v;
+}
+return null;
+}
+function lsSetAll(keys, value){
+const key=Array.isArray(keys) && keys.length ? keys[0] : "";
+if(!key) return;
+try{localStorage.setItem(key, value);}catch(_){}
+}
+function normalizePostAuthRedirect(input){
+try{
+const raw=String(input||"").trim();
+if(!raw) return "";
+const url=new URL(raw, window.location.origin);
+if(url.origin!==window.location.origin) return "";
+return url.pathname + url.search + url.hash;
+}catch(_){
+return "";
+}
+}
+function consumePendingPostAuthRedirect(){
+try{
+const raw=localStorage.getItem(POST_AUTH_REDIRECT_KEY);
+if(!raw) return "";
+const parsed=JSON.parse(raw);
+const createdAt=Number(parsed && parsed.created_at ? parsed.created_at : 0);
+if(!createdAt || (Date.now()-createdAt) > POST_AUTH_REDIRECT_MAX_AGE_MS){
+localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+return "";
+}
+const normalized=normalizePostAuthRedirect(parsed && parsed.url ? parsed.url : "");
+localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+return normalized;
+}catch(_){
+try{localStorage.removeItem(POST_AUTH_REDIRECT_KEY);}catch(__){}
+return "";
+}
+}
+function resetLocalStateForNewUser(currentEmail){
+const last=(lsGetFirst(LS.userEmail)||"").trim().toLowerCase();
+const now=(currentEmail||"").trim().toLowerCase();
+if(!now) return;
+if(last && last!==now){
+try{
+Object.keys(localStorage).forEach(k=>{
+if(k.startsWith("ja_") || k.startsWith("jobapplyai_") || k.startsWith("jm_") || k.startsWith("jobmejob_") || k.startsWith("sb-")){
+localStorage.removeItem(k);
+}
+});
+}catch(_){}
+try{sessionStorage.removeItem("sb_access_token");}catch(_){}
+}
+lsSetAll(LS.userEmail, now);
+}
+function hasProfileLocal(){return (lsGetFirst(LS.profileDone)==="true");}
+
+/* Supabase */
+const supabaseClient=window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* Navigation with smooth leave */
+function go(url){
+document.body.classList.add("leaving");
+setTimeout(()=>{window.location.href=url;},180);
+}
+document.addEventListener("click",(e)=>{
+const a=e.target.closest("a[data-nav='1']");
+if(!a) return;
+const url=a.getAttribute("href");
+if(!url || url.startsWith("#")) return;
+e.preventDefault();
+go(url);
+});
+
+/* API helpers */
+async function upsertCustomerByEmail(email){
+const res=await fetch(`${API_BASE}/customers/upsert`,{
+method:"POST",
+headers:{ "content-type":"application/json" },
+body:JSON.stringify({ email })
+});
+const text=await res.text().catch(()=> "");
+if(!res.ok) throw new Error(`Customer upsert failed: ${res.status} ${text}`);
+let json=null;
+try{json=JSON.parse(text);}catch{json={raw:text};}
+return json;
+}
+async function apiGetWithBearer(path, token){
+const res=await fetch(`${API_BASE}${path}`,{
+method:"GET",
+headers:{ Authorization:"Bearer "+token },
+cache:"no-store"
+});
+const text=await res.text().catch(()=> "");
+let json=null;
+try{json=JSON.parse(text);}catch{json={raw:text};}
+if(!res.ok) throw new Error(`${path} failed: ${res.status} ${json?.error||json?.message||text}`);
+return json;
+}
+
+/* OAuth finish handling */
+async function tryExchangeOAuthCode(){
+try{
+if(typeof supabaseClient.auth.exchangeCodeForSession !== "function") return;
+const u=new URL(window.location.href);
+if(u.searchParams.get("code")){
+await supabaseClient.auth.exchangeCodeForSession(u.searchParams.get("code"));
+u.searchParams.delete("code");
+u.searchParams.delete("state");
+u.searchParams.delete("error");
+u.searchParams.delete("error_description");
+history.replaceState({}, "", u.toString());
+}
+}catch(_){}
+}
+async function getSession(){
+try{
+const {data}=await supabaseClient.auth.getSession();
+return data ? data.session : null;
+}catch(_){
+return null;
+}
+}
+async function waitForSession(maxMs){
+const start=Date.now();
+while(Date.now()-start < maxMs){
+const s=await getSession();
+if(s && s.access_token && s.user && s.user.email) return s;
+await new Promise(r=>setTimeout(r, 200));
+}
+return null;
+}
+
+async function determineNextUrl(session){
+try{
+const st=await apiGetWithBearer("/me/state", session.access_token);
+if(st && st.cv_uploaded) return "./cv.html";
+return "./profile.html";
+}catch(_){
+if(hasProfileLocal()) return "./cv.html";
+return "./profile.html";
+}
+}
+
+function showSignedIn(email){
+setTopState("Signed in");
+const row=$("statusRow");
+const em=$("signedEmail");
+if(row) row.style.display="";
+if(em) em.textContent=String(email||"");
+}
+function showSignedOut(){
+setTopState("Not signed in");
+const row=$("statusRow");
+if(row) row.style.display="none";
+setGoogleButton(false,"Continue with Google");
+setHint("You stay in control. Nothing is sent without your confirmation.");
+}
+
+/* Main flow */
+let completing=false;
+async function completeAndRedirect(session){
+if(completing) return;
+completing=true;
+showError("");
+const email=String(session.user.email||"").trim().toLowerCase();
+
+showSignedIn(email);
+resetLocalStateForNewUser(email);
+try{sessionStorage.setItem("sb_access_token", session.access_token);}catch(_){}
+
+try{
+setGoogleButton(true,"Setting up…");
+setHint("Setting up your account…");
+const data=await upsertCustomerByEmail(email);
+if(data && data.customer_id) lsSetAll(LS.customerId, String(data.customer_id));
+const next=consumePendingPostAuthRedirect() || await determineNextUrl(session);
+setHint("Done. Taking you to the next step…");
+setTimeout(()=>{go(next);}, 650);
+}catch(e){
+showError(e && e.message ? e.message : String(e));
+setGoogleButton(false,"Try again");
+setHint("Could not finish setup. Click again to retry.");
+completing=false;
+}
+}
+
+async function hydrate(){
+await tryExchangeOAuthCode();
+let session=await getSession();
+if(!session){
+const fromOauth=window.location.search.includes("code=") || window.location.search.includes("state=");
+if(fromOauth){
+setGoogleButton(true,"Finishing sign-in…");
+setHint("Finishing sign-in…");
+}
+session=await waitForSession(6000);
+}
+if(session && session.user && session.user.email){
+await completeAndRedirect(session);
+}else{
+showSignedOut();
+}
+}
+
+/* Button actions */
+async function loginWithGoogle(){
+const redirectTo=window.location.origin + window.location.pathname;
+const { error } = await supabaseClient.auth.signInWithOAuth({
+provider:"google",
+options:{ redirectTo }
+});
+if(error) throw error;
+}
+
+$("btnGoogle").addEventListener("click", async ()=>{
+try{
+showError("");
+const s=await getSession();
+if(s && s.user && s.user.email){
+const next=await determineNextUrl(s);
+go(next);
+return;
+}
+setGoogleButton(true,"Opening Google…");
+setHint("Opening Google sign-in…");
+await loginWithGoogle();
+}catch(e){
+showError(e && e.message ? e.message : String(e));
+setGoogleButton(false,"Continue with Google");
+setHint("Sign-in failed. Please retry.");
+}
+});
+
+$("btnSwitch").addEventListener("click", async ()=>{
+try{
+showError("");
+setHint("Switching account…");
+await supabaseClient.auth.signOut();
+try{sessionStorage.removeItem("sb_access_token");}catch(_){}
+showSignedOut();
+}catch(e){
+showError(e && e.message ? e.message : String(e));
+setHint("Could not switch. Please retry.");
+}
+});
+
+/* Auto react to auth state changes (prevents the “click again” issue) */
+supabaseClient.auth.onAuthStateChange(async (event, session)=>{
+if(event === "SIGNED_IN" && session && session.user && session.user.email){
+await completeAndRedirect(session);
+}
+});
+
+/* Boot */
+hydrate().catch(e=>showError(e && e.message ? e.message : String(e)));
+</script>
+</body>
+</html>

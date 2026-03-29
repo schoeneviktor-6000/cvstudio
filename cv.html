@@ -1,0 +1,2578 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>CV Studio • Tailor CV</title>
+  <meta name="description" content="Tailor your CV per role with ATS-safe formatting."/>
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="./shared.css"/>
+
+  <style>
+    /* =========================================================
+       CV Studio (page-only styles)
+       ========================================================= */
+
+        /* --- Studio layout: center canvas + left setup + right inspector --- */
+    .studio{
+      display:grid;
+      grid-template-columns: minmax(300px, 380px) minmax(640px, 1fr) minmax(340px, 430px);
+      gap:14px;
+      align-items:start;
+      grid-template-areas:"left canvas right";
+    }
+    .studioLeft{ grid-area:left; }
+    .studioCanvas{ grid-area:canvas; }
+    .studioRight{ grid-area:right; }
+
+/* Use more of the desktop width on CV Studio (other pages stay at shared max-width) */
+/* Slightly roomier studio grid on very wide monitors */
+@media (min-width: 1500px){
+  .studio{
+    grid-template-columns: 360px minmax(720px, 1fr) 420px;
+  }
+}
+
+/* Focus mode: collapsible Setup (left) panel to reduce overload */
+.studio{ position:relative; }
+.studio.setupCollapsed{
+  grid-template-columns: minmax(540px, 1fr) minmax(320px, 380px);
+  grid-template-areas:"canvas right";
+}
+.studio.setupCollapsed .studioLeft{ display:none; }
+.showWhenSetupCollapsed{ display:none !important; }
+.studio.setupCollapsed .showWhenSetupCollapsed{ display:inline-flex !important; }
+
+/* ============================================================
+   Step 1 Gate (entry flow)
+   - If user did NOT come from Jobs, we start with job selection/paste as the main screen.
+   - After starting tailoring, we open the full studio (canvas + inspector).
+   ============================================================ */
+body.cvGate .studioBar{ display:none !important; }
+body.cvGate .studio{
+  grid-template-columns: 1fr !important;
+  grid-template-areas: "left" !important;
+}
+body.cvGate .studioCanvas,
+body.cvGate .studioRight{ display:none !important; }
+body.cvGate .studioLeft{
+  max-width: 920px;
+  margin: 0 auto;
+}
+body.cvGate #btnCollapseSetup{ display:none !important; }
+body.cvGate #gateIntro{ display:block !important; }
+body.cvGate #btnGenerateAgain{ display:none !important; }
+
+/* Gate header cleanup: remove redundant labels in Step 1/2 */
+body.cvGate .sectionTitleTop{ display:none !important; }
+body.cvGate .gateIntro{ margin-top: 0 !important; }
+
+/* Gate chooser (Step 1): pick how you want to tailor */
+body.cvGate #gateChooser{ display:block; }
+body.cvGate #gateFormWrap{ display:none; }
+
+/* When user picked a path, we switch to gate "form" view (JS toggles .cvGateForm) */
+body.cvGate.cvGateForm #gateChooser{ display:none; }
+body.cvGate.cvGateForm #gateFormWrap{ display:block; }
+body.cvGate.cvGateForm #gateBackRow{ display:flex !important; }
+body.cvGate.cvGateForm #gateBackBadge{ display:none !important; }
+
+/* Gate stepper (1 → 2 → Studio) */
+.stepper{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+  padding-top:8px;
+  border-top:1px solid rgba(17,19,24,.08);
+}
+.stepperItem{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  font-size:12px;
+  color:rgba(17,19,24,.52);
+  white-space:nowrap;
+}
+.stepperDot{
+  width:22px;height:22px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.14);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(17,19,24,.03);
+  font-weight:950;
+  color:rgba(17,19,24,.58);
+}
+.stepperLine{
+  flex:1;
+  height:2px;
+  border-radius:999px;
+  background:rgba(17,19,24,.10);
+}
+.stepperItem.active{ color:rgba(17,19,24,.80); }
+.stepperItem.active .stepperDot{
+  border-color:rgba(34,197,94,.55);
+  background:rgba(34,197,94,.16);
+  color:#0a5a2a;
+  box-shadow: 0 0 0 4px rgba(34,197,94,.14);
+}
+.stepperItem.done{ color:rgba(17,19,24,.74); }
+.stepperItem.done .stepperDot{
+  border-color:rgba(34,197,94,.42);
+  background:rgba(34,197,94,.18);
+  color:#0a5a2a;
+}
+.stepperLine.done{ background:rgba(34,197,94,.38); }
+@media (max-width: 520px){
+  .stepperLabel{ display:none; }
+  .stepper{ gap:8px; }
+}
+
+
+.gateChooser{
+  margin-top: 12px;
+}
+
+/* ============================================================
+   Step 1 — Job source cards (CV Studio gate)
+   Best-practice goals:
+   - Clear “either/or” choice with strong visual affordance
+   - Progressive disclosure: pick source first, then show the form (Step 2)
+   - Accessible: real <button>, focus-visible, large tap targets
+============================================================ */
+
+.gateCards{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+  margin-top:12px;
+}
+
+@media (max-width: 860px){
+  .gateCards{ grid-template-columns: 1fr; }
+}
+
+.gateCard{
+  appearance:none;
+  border:1px solid rgba(17,19,24,.12);
+  background: rgba(255,255,255,.78);
+  border-radius:18px;
+  padding:14px;
+  text-align:left;
+  width:100%;
+  cursor:pointer;
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+
+  box-shadow: 0 10px 26px rgba(17,19,24,.06);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.gateCard:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(17,19,24,.10);
+  border-color: rgba(17,19,24,.18);
+  background: rgba(255,255,255,.88);
+}
+
+.gateCard:active{ transform: translateY(0px) scale(.996); }
+
+.gateCard:focus-visible{
+  outline:none;
+  border-color: rgba(34,197,94,.55);
+  box-shadow: 0 0 0 4px rgba(34,197,94,.18), 0 16px 34px rgba(17,19,24,.10);
+}
+
+/* Visual variants */
+.gateCard[data-variant="recommended"]{
+  border-color: rgba(34,197,94,.22);
+  background: linear-gradient(180deg, rgba(34,197,94,.08), rgba(255,255,255,.86));
+}
+.gateCard[data-variant="fast"]{
+  border-color: rgba(245,158,11,.22);
+  background: linear-gradient(180deg, rgba(245,158,11,.08), rgba(255,255,255,.86));
+}
+
+.gateCardTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.gateCardTop .badge{ align-self:flex-start; margin-top:2px; }
+
+.gateCardTitleRow{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  min-width:0;
+}
+
+.gateCardIcon{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  border:1px solid rgba(17,19,24,.10);
+  background: rgba(255,255,255,.78);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  box-shadow: 0 8px 18px rgba(17,19,24,.06);
+  color: rgba(17,19,24,.66);
+}
+.gateCard[data-variant="recommended"] .gateCardIcon{ color: rgba(22,163,74,.92); }
+.gateCard[data-variant="fast"] .gateCardIcon{ color: rgba(245,158,11,.95); }
+.gateCardIcon svg{ width:20px; height:20px; }
+
+.gateCardTitleWrap{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.gateCardTitle{
+  font-weight: 1000;
+  font-size: 15px;
+  line-height:1.18;
+  letter-spacing:-.2px;
+  color: rgba(17,19,24,.92);
+}
+
+.gateCardDesc{
+  margin-top:0;
+  font-weight: 760;
+  color: rgba(17,19,24,.62);
+  line-height:1.35;
+}
+
+.gateCardHint{
+  font-weight: 820;
+  color: rgba(17,19,24,.54);
+  font-size: 12px;
+  line-height:1.35;
+}
+
+.gateCardMeta{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:0;
+}
+
+.gateMetaPill{
+  font-size:10.5px;
+  font-weight:920;
+  padding:3px 7px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.10);
+  background: rgba(255,255,255,.80);
+  color: rgba(17,19,24,.64);
+  white-space:nowrap;
+}
+
+/* Mini visualization (simplified + distinct) */
+/* Mini visualization (simplified + distinct) */
+.gateMiniFlow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border:1px solid rgba(17,19,24,.10);
+  border-radius:14px;
+  background: rgba(255,255,255,.70);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.70);
+}
+
+.flowChip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.10);
+  background: rgba(255,255,255,.82);
+  font-weight:950;
+  font-size:11px;
+  color: rgba(17,19,24,.82);
+  white-space:nowrap;
+}
+
+.flowArrow{
+  font-weight:1000;
+  color: rgba(17,19,24,.32);
+  line-height:1;
+  margin-top:-1px;
+}
+
+.flowNote{
+  margin-left:auto;
+  font-size:11px;
+  font-weight:900;
+  color: rgba(17,19,24,.56);
+  white-space:nowrap;
+}
+
+.flowDot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background: rgba(17,19,24,.28);
+  box-shadow: 0 0 0 3px rgba(17,19,24,.06);
+  flex:0 0 auto;
+}
+
+.gateCard[data-variant="recommended"] .flowDot.src{
+  background: rgba(22,163,74,.92);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.14);
+}
+.gateCard[data-variant="fast"] .flowDot.src{
+  background: rgba(245,158,11,.95);
+  box-shadow: 0 0 0 3px rgba(245,158,11,.14);
+}
+.flowDot.out{
+  background: rgba(17,19,24,.52);
+  box-shadow: 0 0 0 3px rgba(17,19,24,.08);
+}
+
+@media (max-width: 480px){
+  .gateMiniFlow{ flex-wrap:wrap; }
+  .flowNote{ margin-left:0; width:100%; }
+}
+
+
+/* Bullet list (short “why choose this”) */
+.gateBullets{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  gap:6px;
+  color: rgba(17,19,24,.72);
+  font-weight: 780;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.gateBullets li{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
+
+.gateBulletMark{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  border:1px solid rgba(34,197,94,.28);
+  background: rgba(34,197,94,.14);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  line-height:1;
+  flex:0 0 auto;
+  margin-top:1px;
+}
+.gateCard[data-variant="fast"] .gateBulletMark{
+  border-color: rgba(245,158,11,.30);
+  background: rgba(245,158,11,.14);
+}
+
+/* Footer CTA */
+.gateCardFooter{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items:end;
+  gap:10px;
+  margin-top:2px;
+}
+
+.gateCta{
+  font-weight:950;
+  color: rgba(17,19,24,.66);
+  font-size:12px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+
+.gateCtaArrow{
+  width:18px;
+  height:18px;
+  border-radius:999px;
+  border:1px solid rgba(17,19,24,.10);
+  background: rgba(255,255,255,.75);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform .15s ease;
+}
+
+.gateCard:hover .gateCtaArrow{ transform: translateX(2px); }
+
+@media (max-width: 420px){
+  .gateCard{ padding:12px; }
+  .gateCardIcon{ width:34px; height:34px; }
+  .gateMiniFlow{ padding:9px 10px; }
+}
+.gateBackRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+/* In gate form view, hide the redundant "Job source" pills (we already chose a path) */
+body.cvGate.cvGateForm #jobSourceLbl,
+body.cvGate.cvGateForm #sourcePills,
+body.cvGate.cvGateForm #jobSourceHint{
+  display:none !important;
+}
+
+
+
+/* Compact “How it works” button (opens progress/steps modal) */
+.infoButton{
+  width:100%;
+  margin-top:10px;
+  border:1px solid rgba(17,19,24,.10);
+  border-radius:16px;
+  background:rgba(255,255,255,.70);
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  cursor:pointer;
+  font-weight:900;
+  color:rgba(17,19,24,.78);
+  text-align:left;
+  transition:.15s ease;
+}
+.infoButton:hover{ transform:translateY(-1px); background:rgba(255,255,255,.80); }
+
+    /* Make left/right panels scroll independently on desktop so the CV stays centered */
+    @media (min-width: 1181px){
+      .studioLeft,
+      .studioRight{
+        position: sticky;
+        top: 88px;
+        align-self: start;
+        max-height: calc(100vh - 110px);
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+    @media (max-width: 1180px){
+      .studio{
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "left"
+          "canvas"
+          "right";
+      }
+      .studioLeft,
+      .studioRight{
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+
+    /* Bigger canvas (preview feels like the primary surface) */
+    .studioCanvas .cvBox{ max-height: 72vh; }
+
+    /* “Paper” centered inside the canvas */
+    .studioCanvas .cvPreview,
+    .studioCanvas .cvText,
+    .studioCanvas #changeKpis,
+    .studioCanvas #changeCards,
+    .studioCanvas #diffDetails,
+    .studioCanvas .stickyRow{
+      max-width: 880px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .sectionTitle{
+      margin-bottom:10px;
+    }
+    .sectionTitleTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .sectionTitleActions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      flex:0 0 auto;
+    }
+
+    /* Gate header alignment helpers */
+    #gateStepBadge{ display:none; }
+    body.cvGate #gateStepBadge{ display:inline-flex !important; }
+
+    .gateIntro{ margin-top:10px; }
+    .gateStepTitle{
+      font-weight:980;
+      font-size:20px;
+      letter-spacing:-.2px;
+      line-height:1.15;
+      color:rgba(17,19,24,.92);
+    }
+    .sectionTitle h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+      color:rgba(17,19,24,.70);
+    }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row > *{ flex: 1 1 auto; }
+
+    .label{
+      font-weight:900;
+      font-size:13px;
+      color:rgba(17,19,24,.80);
+      margin:10px 0 6px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .hint{
+      font-size:12px;
+      color:rgba(17,19,24,.58);
+      font-weight:650;
+      line-height:1.45;
+      margin-top:6px;
+    }
+
+    .selectWide{ width:100%; }
+    .jobMeta{
+      font-size:13px;
+      color:rgba(17,19,24,.62);
+      font-weight:700;
+      line-height:1.4;
+      white-space:pre-wrap;
+    }
+
+    /* Strength */
+    .strengthWrap{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:6px;
+    }
+    .strengthTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    input[type="range"]{ width:100%; }
+    .strengthPills{ display:flex; gap:8px; flex-wrap:wrap; }
+    .miniPill{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.04);
+      font-weight:900;
+      font-size:12px;
+      color:rgba(17,19,24,.78);
+      white-space:nowrap;
+      cursor:pointer;
+      user-select:none;
+    }
+    .miniPill.active{
+      border-color: rgba(34,197,94,.55);
+      background: rgba(34,197,94,.14);
+      color:#0a3d1f;
+    }
+
+    details.info{
+      margin-top:10px;
+      border:1px solid rgba(17,19,24,.10);
+      border-radius:16px;
+      background:rgba(255,255,255,.70);
+      padding:10px 12px;
+    }
+    details.info summary{
+      cursor:pointer;
+      font-weight:900;
+      color:rgba(17,19,24,.78);
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    details.info summary::-webkit-details-marker{display:none}
+
+    /* Output */
+    .outputTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .tabs{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .tabBtn{
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.04);
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .tabBtn.active{
+      border-color: rgba(34,197,94,.55);
+      background: rgba(34,197,94,.14);
+      color:#0a3d1f;
+    }
+
+    .cvBox{
+      margin-top:12px;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.03);
+      border-radius:16px;
+      padding:12px;
+      overflow:auto;
+      max-height: 56vh;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    /* Preview rendering (HTML) */
+    .cvPreview:not(.paperA4){
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(17,19,24,.10);
+      border-radius: 14px;
+      padding: 14px 14px;
+    }
+    .cvName{
+      font-size:30px;
+      font-weight:950;
+      letter-spacing:-.6px;
+      color: rgba(17,19,24,.86);
+    }
+    .cvRole{
+      margin-top:4px;
+      font-size:13px;
+      font-weight:850;
+      color: rgba(17,19,24,.58);
+    }
+    .cvContact{
+      margin-top:8px;
+      font-size:12.5px;
+      color: rgba(17,19,24,.62);
+      font-weight:700;
+    }
+    .cvSection{ margin-top:16px; }
+    .cvSectionTitle{
+      font-size:14px;
+      font-weight:950;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      border-bottom:3px solid rgba(17,19,24,.86);
+      padding-bottom:6px;
+      margin:0 0 10px 0;
+    }
+    .cvItem{ margin-top:10px; }
+    .cvItemTitle{ font-size:13.5px; font-weight:950; }
+    .cvItemSub{ margin-top:2px; font-size:12.5px; font-weight:850; color:rgba(17,19,24,.62); }
+    .cvMetaLine{ margin-top:2px; font-size:12.5px; color:rgba(17,19,24,.62); }
+    .cvUl{ margin:6px 0 0 18px; padding:0; }
+    .cvUl li{ margin:0 0 3px 0; font-size:13px; line-height:1.45; }
+    .cvPara{ font-size:13px; line-height:1.5; margin:0; }
+    .cvSkillLine{ font-size:13px; line-height:1.5; margin:2px 0; }
+
+    /* Text view */
+    textarea.cvText{
+      width:100%;
+      min-height: 56vh;
+      border:0;
+      outline:none;
+      resize:vertical;
+      background:transparent;
+      font-size:13px;
+      line-height:1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: rgba(17,19,24,.92);
+    }
+
+    /* Sticky actions */
+    .stickyActions{
+      position:sticky;
+      bottom:0;
+      margin-top:12px;
+      padding-top:10px;
+      background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.92) 30%, rgba(255,255,255,.96));
+      backdrop-filter: blur(10px);
+    }
+    .stickyRow{ display:flex; gap:10px; flex-wrap:wrap; }
+    @media (max-width:620px){
+      .stickyRow{ flex-direction:column; }
+      .stickyRow .btn{ width:100%; justify-content:center; }
+      .cvBox{ max-height: 52vh; }
+      textarea.cvText{ min-height: 52vh; }
+    }
+
+    /* KPIs */
+    .kpiRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:10px;
+    }
+    .kpi{
+      flex: 1 1 170px;
+      min-width: 170px;
+      border:1px solid rgba(17,19,24,.10);
+      background:rgba(255,255,255,.78);
+      border-radius:16px;
+      padding:10px 12px;
+    }
+    .kpi .k{ font-size:12px; color:rgba(17,19,24,.60); font-weight:850; }
+    .kpi .v{ margin-top:6px; font-size:18px; font-weight:980; letter-spacing:-.4px; }
+    .bar{ height:10px; border-radius:999px; background:rgba(17,19,24,.08); overflow:hidden; margin-top:10px; }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, rgba(34,197,94,.70), rgba(22,163,74,.70));
+      border-radius:999px;
+      transition:width .25s ease;
+    }
+
+    /* Chips */
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .chip{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.04);
+      font-weight:850;
+      font-size:12px;
+      color:rgba(17,19,24,.78);
+      white-space:nowrap;
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .chip.good{ border-color: rgba(34,197,94,.38); background: rgba(34,197,94,.12); color:#0a3d1f; }
+    .chip.warn{ border-color: rgba(255,179,0,.42); background: rgba(255,179,0,.12); color:#5a3b00; }
+
+    /* Clickable missing keyword chips */
+    button.chipBtn{
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid rgba(255,179,0,.48);
+      background: rgba(255,179,0,.12);
+    }
+    button.chipBtn:hover{
+      background: rgba(255,179,0,.16);
+      transform: translateY(-1px);
+    }
+    .chipPlus{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:18px;
+      height:18px;
+      border-radius:999px;
+      background: rgba(255,179,0,.22);
+      border:1px solid rgba(255,179,0,.28);
+      font-weight:950;
+      flex:0 0 auto;
+    }
+
+    .monoSmall{
+      white-space:pre-wrap;
+      font-size:12px;
+      line-height:1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: rgba(17,19,24,.72);
+      background:rgba(17,19,24,.04);
+      border:1px solid rgba(17,19,24,.12);
+      border-radius:14px;
+      padding:10px;
+      margin-top:10px;
+    }
+
+    /* Description modal */
+    .descMeta{
+      margin-top:6px;
+      color:rgba(17,19,24,.62);
+      font-weight:700;
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    /* Keyword modal */
+    .formRow{ display:flex; gap:10px; flex-wrap:wrap; }
+    .formRow > *{ flex:1 1 220px; min-width:220px; }
+    .field{
+      border:1px solid rgba(17,19,24,.12);
+      background: rgba(17,19,24,.03);
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .fieldLabel{
+      font-weight:900;
+      font-size:12px;
+      color: rgba(17,19,24,.72);
+      margin-bottom:8px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .checkLine{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(17,19,24,.12);
+      background: rgba(255,255,255,.72);
+      font-size:13px;
+      font-weight:800;
+      color: rgba(17,19,24,.78);
+    }
+    .checkLine input{ margin-top:3px; }
+    .tinyNote{
+      font-size:12px;
+      line-height:1.45;
+      color: rgba(17,19,24,.60);
+      font-weight:650;
+      margin-top:8px;
+    }
+    .kwPreview{
+      white-space:pre-wrap;
+      font-size:12.5px;
+      line-height:1.45;
+      background: rgba(17,19,24,.03);
+      border:1px solid rgba(17,19,24,.10);
+      border-radius:14px;
+      padding:10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      color: rgba(17,19,24,.86);
+      margin-top:8px;
+    }
+    .pillToggle{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .pillToggle button{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background: rgba(17,19,24,.04);
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .pillToggle button.active{
+      border-color: rgba(34,197,94,.55);
+      background: rgba(34,197,94,.14);
+      color:#0a3d1f;
+    }
+
+    .warnBox{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,179,0,.42);
+      background: rgba(255,179,0,.10);
+      color:#5a3b00;
+      font-weight:800;
+      font-size:12.5px;
+      line-height:1.45;
+    }
+  
+    /* =========================================================
+       Changes / Diff tab
+       ========================================================= */
+    .changeHeader{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:2px;
+    }
+    .changeKpis{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .changePill{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.04);
+      font-weight:900;
+      font-size:12px;
+      color:rgba(17,19,24,.78);
+      white-space:nowrap;
+    }
+    .changePill.good{ border-color: rgba(34,197,94,.38); background: rgba(34,197,94,.12); color:#0a3d1f; }
+    .changePill.warn{ border-color: rgba(255,179,0,.38); background: rgba(255,179,0,.12); color:#5a3b00; }
+    .changePill.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); color:#5b1111; }
+
+    .changeCard{
+      border:1px solid rgba(17,19,24,.10);
+      background:rgba(255,255,255,.78);
+      border-radius:16px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .changeCardTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .changeTitle{
+      font-weight:980;
+      font-size:13px;
+      letter-spacing:-.1px;
+      color:rgba(17,19,24,.86);
+    }
+    .changeMeta{
+      margin-top:2px;
+      font-weight:750;
+      font-size:12px;
+      color:rgba(17,19,24,.60);
+      line-height:1.35;
+    }
+    .changeBody{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .changeBlock{
+      border:1px solid rgba(17,19,24,.10);
+      background:rgba(17,19,24,.03);
+      border-radius:14px;
+      padding:10px;
+    }
+    .changeLabel{
+      font-size:11px;
+      font-weight:950;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      color:rgba(17,19,24,.62);
+      margin-bottom:6px;
+    }
+    .changeText{
+      font-size:13px;
+      line-height:1.45;
+      color:rgba(17,19,24,.90);
+      white-space:pre-wrap;
+    }
+    .changeTags{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .tag{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.10);
+      background:rgba(17,19,24,.04);
+      font-weight:900;
+      font-size:12px;
+      color:rgba(17,19,24,.74);
+    }
+    .tag.good{ border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.10); color:#0a3d1f; }
+    .tag.warn{ border-color: rgba(255,179,0,.30); background: rgba(255,179,0,.10); color:#5a3b00; }
+
+    .diffLines{
+      white-space:pre;
+      font-size:12px;
+      line-height:1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .diffLine{ padding:2px 4px; border-radius:8px; display:block; }
+    .diffLine.add{ background: rgba(34,197,94,.10); color: rgba(17,19,24,.90); }
+    .diffLine.del{ background: rgba(239,68,68,.08); color: rgba(17,19,24,.90); }
+    .diffLine.same{ color: rgba(17,19,24,.62); }
+
+    .miniNote{
+      margin-top:8px;
+      font-size:12px;
+      font-weight:750;
+      color:rgba(17,19,24,.60);
+      line-height:1.45;
+    }
+
+
+
+    /* Paste job description inputs */
+    .textInput{
+      width:100%;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(255,255,255,.78);
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:800;
+      font-size:13px;
+      color:rgba(17,19,24,.90);
+      outline:none;
+    }
+    .textInput:focus{
+      border-color: rgba(34,197,94,.45);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+    textarea.jobDesc{
+      width:100%;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(255,255,255,.78);
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:750;
+      font-size:13px;
+      line-height:1.45;
+      color:rgba(17,19,24,.92);
+      outline:none;
+      resize:vertical;
+      min-height: 180px;
+    }
+    textarea.jobDesc:focus{
+      border-color: rgba(34,197,94,.45);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+    .qualityPill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.04);
+      font-weight:900;
+      font-size:12px;
+      color:rgba(17,19,24,.78);
+      white-space:nowrap;
+    }
+    .qualityPill.good{ border-color: rgba(34,197,94,.38); background: rgba(34,197,94,.12); color:#0a3d1f; }
+    .qualityPill.warn{ border-color: rgba(255,179,0,.38); background: rgba(255,179,0,.12); color:#5a3b00; }
+
+  
+    /* =========================================================
+       Keyword "Rewrite again" + Final QA UI
+       ========================================================= */
+    .altOptions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .altOption {
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.03);
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+    .altOption:hover { transform: translateY(-1px); }
+    .altOption.active {
+      border-color: rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.06);
+    }
+    .altMeta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .altLabel { font-weight: 850; }
+    .altPill {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      opacity: 0.95;
+    }
+    .altText {
+      white-space: pre-wrap;
+      line-height: 1.35;
+    }
+    .qaList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .qaItem {
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+    }
+    .qaHead {
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .qaTitle { font-weight: 850; }
+    .qaTag {
+      font-size: 12px;
+      font-weight: 850;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      opacity: 0.95;
+    }
+    .qaDesc { margin-top: 6px; white-space: pre-wrap; opacity: 0.92; }
+    .qaActionsRow { display:flex; gap:8px; margin-top: 8px; flex-wrap: wrap; }
+    .miniBadgeDot {
+      display:inline-block;
+      width:8px;height:8px;border-radius:99px;
+      background: rgba(255,255,255,0.35);
+      margin-left:8px;
+      vertical-align:middle;
+    }
+    .miniBadgeDot.good { background: rgba(120,255,180,0.85); }
+    .miniBadgeDot.warn { background: rgba(255,220,120,0.85); }
+    .miniBadgeDot.bad  { background: rgba(255,120,120,0.85); }
+
+
+
+    /* =========================================================
+       Nav: Activity modal (page-only)
+       ========================================================= */
+    .activityList{display:flex;flex-direction:column;gap:10px;}
+    .activityItem{
+      border:1px solid rgba(17,19,24,.12);
+      background:rgba(17,19,24,.03);
+      border-radius:14px;
+      padding:12px;
+    }
+    .activityTop{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .activityTitle{font-weight:950;line-height:1.25;}
+    .activityTitle a{color:var(--accent2);text-decoration:underline;}
+    .activityMeta{
+      margin-top:6px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      color:rgba(17,19,24,.64);
+      font-size:12px;
+      font-weight:750;
+    }
+    .activityMeta .mono{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:11px;
+      word-break:break-all;
+      color:rgba(17,19,24,.56);
+    }
+
+/* ============================================================
+   CV Studio – “Merge preview” animation in Generate modal
+   (small, self-contained, no external assets)
+============================================================ */
+.genViz{
+  margin-top:12px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 10px 30px rgba(17,19,24,.08);
+  overflow:hidden;
+}
+.genVizInner{ padding:12px; }
+.genVizTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+.genVizLabel{
+  font-weight:980;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color: rgba(17,19,24,.50);
+}
+.genVizCols{
+  display:flex;
+  align-items:stretch;
+  gap:12px;
+}
+.genVizStack{
+  flex:1;
+  min-width: 200px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.genVizMiniCard{
+  border:1px solid rgba(17,19,24,.10);
+  border-radius:14px;
+  background: rgba(255,255,255,.92);
+  padding:10px;
+  position:relative;
+}
+.genVizMiniHead{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  color: rgba(17,19,24,.76);
+  font-size:13px;
+}
+.genVizDot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background: rgba(34,197,94,.92);
+  box-shadow:0 0 0 4px rgba(34,197,94,.14);
+  flex: 0 0 auto;
+}
+.genVizDot.cv{
+  background: rgba(59,130,246,.92);
+  box-shadow:0 0 0 4px rgba(59,130,246,.12);
+}
+.genVizDot.out{
+  background: rgba(245,158,11,.95);
+  box-shadow:0 0 0 4px rgba(245,158,11,.14);
+}
+.genVizLines{
+  margin-top:8px;
+  display:grid;
+  gap:6px;
+}
+.genVizLine{
+  height:8px;
+  border-radius:999px;
+  background: rgba(17,19,24,.08);
+}
+.genVizLine.w90{ width:90%; }
+.genVizLine.w85{ width:85%; }
+.genVizLine.w80{ width:80%; }
+.genVizLine.w75{ width:75%; }
+.genVizLine.w70{ width:70%; }
+.genVizLine.w60{ width:60%; }
+
+.genVizPlus{
+  align-self:center;
+  font-weight:980;
+  font-size:16px;
+  color: rgba(17,19,24,.28);
+  user-select:none;
+}
+
+.genVizFlow{
+  width:54px;
+  min-width:54px;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.genVizFlow::before{
+  content:"";
+  position:absolute;
+  left:6px;
+  right:10px;
+  top:50%;
+  height:2px;
+  transform: translateY(-50%);
+  background: rgba(17,19,24,.14);
+  border-radius:999px;
+}
+.genVizFlow::after{
+  content:"";
+  position:absolute;
+  right:8px;
+  top:50%;
+  width:9px;
+  height:9px;
+  border-right:2px solid rgba(17,19,24,.18);
+  border-top:2px solid rgba(17,19,24,.18);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.genVizOut{ flex:1.12; min-width: 240px; }
+.genVizJobTitle{
+  margin-top:8px;
+  font-weight:980;
+  font-size:14px;
+  line-height:1.2;
+  color: rgba(17,19,24,.86);
+}
+.genVizJobMeta{
+  margin-top:2px;
+  font-weight:750;
+  font-size:12px;
+  color: rgba(17,19,24,.55);
+}
+
+/* Animated “merge” state */
+.genViz.isRunning .genVizFlow::before{
+  background: linear-gradient(90deg,
+    rgba(34,197,94,0),
+    rgba(34,197,94,.55),
+    rgba(34,197,94,0));
+  background-size: 180px 100%;
+  animation: genVizFlow 1.15s linear infinite;
+}
+@keyframes genVizFlow{
+  from{ background-position: 0 0; }
+  to{ background-position: 180px 0; }
+}
+.genViz.isRunning .genVizLine{
+  background: linear-gradient(90deg,
+    rgba(17,19,24,.06),
+    rgba(17,19,24,.12),
+    rgba(17,19,24,.06));
+  background-size: 220% 100%;
+  animation: genVizShimmer 1.25s ease-in-out infinite;
+}
+@keyframes genVizShimmer{
+  0%{ background-position: 0 0; }
+  100%{ background-position: -220% 0; }
+}
+.genViz.isRunning .genVizOut::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:14px;
+  pointer-events:none;
+  background: linear-gradient(110deg,
+    rgba(34,197,94,0) 0%,
+    rgba(34,197,94,.10) 45%,
+    rgba(34,197,94,0) 90%);
+  background-size: 200% 100%;
+  animation: genVizScan 1.35s ease-in-out infinite;
+}
+@keyframes genVizScan{
+  0%{ background-position: 200% 0; }
+  100%{ background-position: -200% 0; }
+}
+
+/* Done / Error accents */
+.genViz.isDone .genVizOut{ border-color: rgba(22,163,74,.32); }
+.genViz.isError .genVizOut{ border-color: rgba(216,27,96,.32); }
+.genViz.isDone .genVizDot.out{ background: rgba(22,163,74,.92); box-shadow:0 0 0 4px rgba(22,163,74,.14); }
+.genViz.isError .genVizDot.out{ background: rgba(216,27,96,.92); box-shadow:0 0 0 4px rgba(216,27,96,.14); }
+
+/* Responsive: stack on small screens */
+@media (max-width: 640px){
+  .genVizCols{ flex-direction:column; }
+  .genVizFlow{
+    width:auto;
+    min-width:0;
+    height:34px;
+  }
+  .genVizFlow::before{
+    left:50%;
+    right:auto;
+    top:6px;
+    bottom:10px;
+    width:2px;
+    height:auto;
+    transform: translateX(-50%);
+  }
+  .genVizFlow::after{
+    right:auto;
+    left:50%;
+    top:auto;
+    bottom:8px;
+    transform: translateX(-50%) rotate(135deg);
+  }
+  .genViz.isRunning .genVizFlow::before{
+    background: linear-gradient(180deg,
+      rgba(34,197,94,0),
+      rgba(34,197,94,.55),
+      rgba(34,197,94,0));
+    background-size: 100% 180px;
+    animation: genVizFlowVert 1.15s linear infinite;
+  }
+  @keyframes genVizFlowVert{
+    from{ background-position: 0 0; }
+    to{ background-position: 0 180px; }
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .genViz *{ animation: none !important; }
+}
+
+
+    /* ============================================================
+       Resume.io-inspired Studio Bar + Modes (page-only)
+       ============================================================ */
+
+    .modeTag{
+      font-size:11px;
+      font-weight:950;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.10);
+      background:rgba(255,255,255,.80);
+      color:rgba(17,19,24,.70);
+    }
+
+    .studioActionsTop{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+
+    /* Source pill (top bar): Using: <job> */
+    .sourceChipPill{
+      max-width: min(560px, 62vw);
+      overflow:hidden;
+      cursor: default;
+    }
+    .sourceChipPill .sourceChipLabel{
+      color: rgba(17,19,24,.56);
+      font-weight:950;
+    }
+    .sourceChipPill .sourceChipValue{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-weight:950;
+      color: rgba(17,19,24,.82);
+    }
+
+    @media (max-width: 620px){
+      .sourceChipPill{ max-width: 92vw; }
+    }
+
+/* Mode-based “show/hide” – keeps the interface calmer */
+    #studioRoot[data-mode="tailor"] #canvasTabs{ display:none; }
+    #studioRoot[data-mode="tailor"] #cvTextWrap,
+    #studioRoot[data-mode="tailor"] #cvChangesWrap{ display:none !important; }
+    #studioRoot[data-mode="tailor"] #cvPreviewWrap{ display:block !important; }
+
+    #studioRoot[data-mode="review"] #canvasTabs{ display:none; }
+    #studioRoot[data-mode="review"] #cvTextWrap,
+    #studioRoot[data-mode="review"] #cvChangesWrap{ display:none !important; }
+    #studioRoot[data-mode="review"] #cvPreviewWrap{ display:block !important; }
+    #studioRoot[data-mode="review"] #inspectorKeywords{ display:none !important; }
+    #studioRoot[data-mode="review"] #inspectorReview{ display:block !important; }
+
+    #studioRoot[data-mode="edit"] #canvasTabs{ display:flex; }
+    #studioRoot[data-mode="edit"] #inspectorReview{ display:none !important; }
+
+    #studioRoot[data-mode="customize"] #inspectorReview{ display:none !important; }
+
+    /* Resume-like “page preview” feel + zoom HUD */
+    .iconBtn{
+      width:34px;
+      height:34px;
+      border-radius:999px;
+      border:1px solid rgba(17,19,24,.12);
+      background: rgba(255,255,255,.72);
+      font-weight:980;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:.15s ease;
+    }
+    .iconBtn:hover{ transform:translateY(-1px); background:rgba(255,255,255,.86); }
+    .zoomPct{
+      font-weight:950;
+      color:rgba(17,19,24,.78);
+      min-width: 54px;
+      text-align:center;
+    }
+    .zoomSep{
+      width:1px;
+      height:18px;
+      background: rgba(17,19,24,.14);
+      margin: 0 2px;
+    }
+
+    /* AI Review panel in Inspector */
+    #inspectorReview{ display:none; }
+    .reviewCard{
+      border:1px solid rgba(17,19,24,.10);
+      border-radius:16px;
+      padding:12px;
+      background: rgba(255,255,255,.72);
+    }
+    .reviewTitle{
+      font-weight:980;
+      font-size:14px;
+      letter-spacing:-.1px;
+      margin:0;
+    }
+    .reviewRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .reviewList{
+      margin:10px 0 0 18px;
+      color: rgba(17,19,24,.72);
+      font-weight:750;
+      line-height:1.5;
+      font-size:13px;
+    }
+
+  
+/* Print: export the A4 page cleanly */
+@media print{
+  body{ background:#fff !important; }
+  .topbar, .studioBar, .studioLeft, .studioRight, .zoomHud{ display:none !important; }
+  .studio{ display:block !important; }
+  .studioCanvas{ border:none !important; box-shadow:none !important; padding:0 !important; }
+  .paperWrap{ padding:0 !important; overflow:visible !important; }
+  #pageZoom{ transform:none !important; }
+  .paperA4{ box-shadow:none !important; border:none !important; margin:0 !important; width:210mm !important; min-height:297mm !important; }
+}
+
+.modeTab[disabled]{opacity:.55;cursor:not-allowed;transform:none;}
+
+/* ============================================================
+   Coming from Jobs: focus on tailoring settings (hide job-source selection)
+   ============================================================ */
+body.fromJobsLink #jobSourceLbl,
+body.fromJobsLink #sourcePills,
+body.fromJobsLink #jobSourceHint,
+body.fromJobsLink #queueBox,
+body.fromJobsLink #pasteBox{
+  display:none !important;
+}
+
+/* Optional: keep only the “Settings (optional)” section visible first */
+body.fromJobsLink #settingsDetails{
+  margin-top: 0 !important;
+}
+
+/* Auto-start banner */
+.autoStartBar{
+  border:1px dashed rgba(34,197,94,.42);
+  background: rgba(34,197,94,.12);
+  border-radius: 16px;
+  padding: 12px;
+}
+.autoStartTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.autoStartTitle{
+  font-weight: 950;
+  letter-spacing: -.2px;
+}
+.autoStartDesc{
+  margin-top: 6px;
+  color: rgba(17,19,24,.70);
+  font-weight: 650;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+  
+
+    /* ---------------------------------------------------------
+       Guided highlight (Jobs → CV Studio)
+       - Subtle glow around Template + Tailoring strength
+       - Active until user clicks "Generate tailored CV"
+       --------------------------------------------------------- */
+    .guidedGlow{
+      border-radius:16px;
+      box-shadow: 0 0 0 3px rgba(34,197,94,.14), 0 18px 44px rgba(34,197,94,.10);
+      transition: box-shadow .2s ease, transform .2s ease;
+    }
+    .guidedGlow.guidedPulse{
+      animation: guidedPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes guidedPulse{
+      0%,100%{ box-shadow: 0 0 0 3px rgba(34,197,94,.12), 0 14px 34px rgba(34,197,94,.08); }
+      50%{ box-shadow: 0 0 0 4px rgba(34,197,94,.22), 0 20px 50px rgba(34,197,94,.12); }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .guidedGlow.guidedPulse{ animation:none; }
+    }
+</style>
+</head>
+
+<body>
+  <header class="topbar">
+    <nav class="nav">
+      <a class="brand" href="./index.html" data-nav="1" aria-label="CV Studio home">
+        <span class="logo" aria-hidden="true"></span>
+        <span>CV Studio</span>
+      </a>
+
+      <div class="navlinks">
+        <a class="pill" href="./profile.html" data-nav="1">Upload CV</a>
+        <a class="pill active" href="./cv.html" data-nav="1">Tailor CV</a>
+
+        <details class="navDrop" id="navAccount" style="display:none">
+          <summary class="pill" aria-label="Account menu">
+            <span id="navAccountLabel">Account</span>
+            <span aria-hidden="true">▾</span>
+          </summary>
+
+          <div class="navMenu" role="menu" aria-label="Account menu">
+            <div class="menuLabel">Account</div>
+            <a class="pill" href="./profile.html" data-nav="1" role="menuitem">Upload CV</a>
+            <button class="btn ghost" id="navActivity" type="button" role="menuitem">Recent activity</button>
+
+            <div class="menuSep" role="separator"></div>
+            <button class="btn danger" id="navLogout" type="button" role="menuitem">Logout</button>
+          </div>
+        </details>
+
+        <a class="pill" href="./signup.html" id="navSignIn" data-nav="1">Sign in</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main mainWide">
+    <h1 class="h1">CV Studio</h1>
+    <p class="sub" id="subTitle">Paste a job description and tailor your uploaded CV with ATS-safe formatting.</p>
+
+    <div class="errorTop" id="errorTop"></div>
+
+    <div class="studioBar" aria-label="CV Studio modes">
+      <div class="studioTabsTop" role="tablist" aria-label="Studio modes">
+        <button class="modeTab active" id="modeTailor" type="button" role="tab" aria-selected="true" title="AI tailoring + ATS keywords">Tailor ✨</button>
+        <button class="modeTab" id="modeEdit" type="button" role="tab" aria-selected="false" title="Manually edit the generated CV (Text view)">Edit text ✍️</button>
+        <button class="modeTab" id="modeReview" type="button" role="tab" aria-selected="false" title="Quality check + suggestions">AI Review</button>
+        <button class="modeTab" id="modeCustomize" type="button" role="tab" aria-selected="false" disabled>Customize <span class="modeTag">Soon</span></button>
+      </div>
+
+      <div class="studioActionsTop">
+        
+        <button class="btn small ghost" id="btnNewCv" type="button" title="Start a new CV tailoring flow">New CV</button>
+
+        <div class="pill mini sourceChipPill" id="sourceChipPill" style="display:none" title="Current job context" aria-label="Current job context">
+          <span class="sourceChipLabel" id="sourceChipLabel">Using:</span>
+          <span class="sourceChipValue" id="sourceChipValue">—</span>
+        </div>
+
+        <details class="studioDrop" id="studioDownloadDrop">
+          <summary class="btn primary" id="studioDownloadSummary" aria-label="Download menu">Download ▾</summary>
+          <div class="studioMenu" role="menu" aria-label="Download options">
+            <div class="menuLabel">Export</div>
+            <button class="btn ghost" id="studioActCopy" type="button" role="menuitem">Copy</button>
+            <button class="btn ghost" id="studioActDownload" type="button" role="menuitem">Download .txt</button>
+            <button class="btn ghost" id="studioActPrint" type="button" role="menuitem">Print / PDF</button>
+
+            <div class="menuSep" role="separator"></div>
+            <div class="menuLabel">Quality</div>
+            <button class="btn ghost" id="studioActQa" type="button" role="menuitem">Final QA</button>
+          </div>
+        </details>
+      </div>
+    </div>
+
+
+    <section class="studio" id="studioRoot" data-mode="tailor">
+      <!-- LEFT: Setup -->
+      <aside class="card studioLeft">
+        <div class="sectionTitle">
+          <div class="sectionTitleTop">
+            <h2 id="setupTitle">Setup</h2>
+
+            <div class="sectionTitleActions">
+              <button class="btn small ghost" id="btnCollapseSetup" type="button" title="Hide setup">Hide</button>
+                          </div>
+          </div>
+
+          <div class="gateIntro" id="gateIntro" style="display:none">
+            <div class="gateStepTitle" id="gateStepTitle">Choose your job source</div>
+            <div class="hint" id="gateStepHint">Choose one option. Next you’ll add the details and start tailoring.</div>
+
+            <div class="stepper" id="gateStepper" aria-label="Progress">
+              <div class="stepperItem" id="stepper1">
+                <div class="stepperDot" aria-hidden="true">1</div>
+                <div class="stepperLabel" id="stepperLbl1">Source</div>
+              </div>
+              <div class="stepperLine" id="stepLine12" aria-hidden="true"></div>
+              <div class="stepperItem" id="stepper2">
+                <div class="stepperDot" aria-hidden="true">2</div>
+                <div class="stepperLabel" id="stepperLbl2">Details</div>
+              </div>
+              <div class="stepperLine" id="stepLine23" aria-hidden="true"></div>
+              <div class="stepperItem" id="stepper3">
+                <div class="stepperDot" aria-hidden="true">3</div>
+                <div class="stepperLabel" id="stepperLbl3">Studio</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gateChooser" id="gateChooser" style="display:none">
+          <div class="gateCards" role="list" aria-label="Choose your job source">
+  <!-- Option 1: From Jobs queue -->
+  <button class="gateCard" id="gatePickQueue" type="button" data-variant="recommended" aria-describedby="gatePickQueueDesc gatePickQueueHint" style="display:none">
+    <div class="gateCardTop">
+      <div class="gateCardTitleRow">
+        <div class="gateCardIcon" aria-hidden="true">
+          <!-- Briefcase icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2H9V6Z"/>
+            <path d="M7 8h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
+            <path d="M5 13h14"/>
+          </svg>
+        </div>
+
+        <div class="gateCardTitleWrap">
+          <div class="gateCardTitle" id="gatePickQueueTitle">From my Jobs</div>
+          <div class="gateCardDesc" id="gatePickQueueDesc">Pick a saved job from your Jobs queue.</div>
+        </div>
+      </div>
+
+      <span class="badge prio" id="gatePickQueueTag">Recommended</span>
+    </div>
+
+    <div class="gateMiniFlow" aria-hidden="true">
+      <span class="flowChip"><span class="flowDot src" aria-hidden="true"></span><span>Jobs queue</span></span>
+      <span class="flowArrow" aria-hidden="true">→</span>
+      <span class="flowChip"><span class="flowDot out" aria-hidden="true"></span><span>Tailored CV</span></span>
+      <span class="flowNote">Auto‑fill basics</span>
+    </div>
+
+    <ul class="gateBullets">
+      <li><span class="gateBulletMark" aria-hidden="true">✓</span><span>Auto‑fills title, company &amp; apply link</span></li>
+      <li><span class="gateBulletMark" aria-hidden="true">✓</span><span>Best for multi‑apply workflows</span></li>
+    </ul>
+
+    <div class="gateCardFooter">
+      <div class="gateCardHint" id="gatePickQueueHint">Best if you already saved jobs you want to apply to.</div>
+      <div class="gateCta" aria-hidden="true"><span>Choose</span><span class="gateCtaArrow">→</span></div>
+    </div>
+  </button>
+
+  <!-- Option 2: Paste job description -->
+  <button class="gateCard" id="gatePickPaste" type="button" data-variant="fast" aria-describedby="gatePickPasteDesc gatePickPasteHint">
+    <div class="gateCardTop">
+      <div class="gateCardTitleRow">
+        <div class="gateCardIcon" aria-hidden="true">
+          <!-- Clipboard icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 4h6v2a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2V4Z"/>
+            <path d="M9 6H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/>
+            <path d="M8 12h8"/>
+            <path d="M8 16h8"/>
+          </svg>
+        </div>
+
+        <div class="gateCardTitleWrap">
+          <div class="gateCardTitle" id="gatePickPasteTitle">Paste job description</div>
+          <div class="gateCardDesc" id="gatePickPasteDesc">Paste a job description from LinkedIn or any company site.</div>
+        </div>
+      </div>
+
+      <span class="badge warn" id="gatePickPasteTag">Fast</span>
+    </div>
+
+    <div class="gateMiniFlow" aria-hidden="true">
+      <span class="flowChip"><span class="flowDot src" aria-hidden="true"></span><span>Paste JD</span></span>
+      <span class="flowArrow" aria-hidden="true">→</span>
+      <span class="flowChip"><span class="flowDot out" aria-hidden="true"></span><span>Tailored CV</span></span>
+      <span class="flowNote">Start instantly</span>
+    </div>
+
+    <ul class="gateBullets">
+      <li><span class="gateBulletMark" aria-hidden="true">✓</span><span>Works with LinkedIn, company sites, PDF text</span></li>
+      <li><span class="gateBulletMark" aria-hidden="true">✓</span><span>Best results when you paste the full posting</span></li>
+    </ul>
+
+    <div class="gateCardFooter">
+      <div class="gateCardHint" id="gatePickPasteHint">Tip: include Responsibilities + Requirements + Tech stack.</div>
+      <div class="gateCta" aria-hidden="true"><span>Choose</span><span class="gateCtaArrow">→</span></div>
+    </div>
+  </button>
+</div>
+        </div>
+
+        <div id="gateFormWrap">
+          <div class="gateBackRow" id="gateBackRow" style="display:none">
+            <button class="btn small ghost" id="gateBackBtn" type="button">← Back</button>
+</div>
+
+          <div class="label" id="jobSourceLbl">Job source</div>
+        <div class="strengthPills" id="sourcePills" style="display:none">
+          <span class="miniPill active" data-src="queue" id="srcQueue">From my Jobs</span>
+          <span class="miniPill" data-src="paste" id="srcPaste">Paste description</span>
+        </div>
+        <div class="hint" id="jobSourceHint">Paste any full job description from LinkedIn, a company page, or an email.</div>
+
+        <div id="queueBox" style="display:none">
+          <div class="label" id="jobToTailorLbl">Job to tailor</div>
+          <div class="row">
+            <select id="jobSelect" class="selectWide">
+              <option value="">Loading…</option>
+            </select>
+            <a class="btn" href="./profile.html" data-nav="1" style="flex:0 0 auto;display:none" id="openJobsBtn">Open Jobs</a>
+          </div>
+          <div class="hint" id="jobHint">Pick a job from your queue.</div>
+          <div class="jobMeta" id="jobMeta"></div>
+        </div>
+
+        <div id="pasteBox" style="display:none">
+          <div class="label" id="pasteJobLbl">Pasted job (not saved)</div>
+
+          <div class="row">
+            <input id="pasteTitle" class="textInput" type="text" placeholder="Job title (optional)" />
+            <input id="pasteCompany" class="textInput" type="text" placeholder="Company (optional)" />
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <input id="pasteApply" class="textInput" type="url" placeholder="Apply link (optional)" />
+            <select id="pasteLangHint" class="selectWide" title="Language hint for tailoring">
+              <option value="auto">Language: Auto</option>
+              <option value="en">Language: English</option>
+              <option value="de">Language: German</option>
+            </select>
+          </div>
+
+          <div class="label" style="margin-top:12px" id="pasteDescLbl">Job description</div>
+          <textarea id="pasteDesc" class="jobDesc" rows="10" placeholder="Paste the job description here…"></textarea>
+
+          <div class="miniNote" style="margin-top:8px">
+            <span class="qualityPill warn" id="pasteQualityPill">Needs text</span>
+            <span id="pasteQuality">Paste the full job posting for best results.</span>
+          </div>
+          <div class="hint" id="pasteHint">Tip: include Responsibilities + Requirements + Tech stack. Don’t paste confidential info.</div>
+        </div>
+
+        <details class="info" id="jobToolsDetails" style="display:none; margin-top:10px">
+  <summary id="jobToolsTitle">Job tools</summary>
+  <div class="row" style="margin-top:10px">
+    <button class="btn ghost" id="btnViewDesc" type="button" disabled>View description</button>
+    <button class="btn ghost" id="btnCopyDesc" type="button" disabled>Copy description</button>
+  </div>
+</details>
+
+        <div class="hr"></div>
+
+        
+        <!-- Auto-start (when coming from Jobs) -->
+        <div id="autoStartBar" class="autoStartBar" style="display:none; margin-top:10px">
+          <div class="autoStartTop">
+            <div class="autoStartTitle" id="autoStartTitle">Next: Tailoring settings</div>
+            <span class="badge good" id="autoStartBadge">From Jobs</span>
+          </div>
+          <div class="autoStartDesc" id="autoStartDesc">Choose template & strength, then click Generate tailored CV.</div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary small" id="btnStartNow" type="button">Generate</button>
+            <button class="btn small ghost" id="btnCancelAuto" type="button">Hide</button>
+          </div>
+        </div>
+
+<details class="info" id="settingsDetails" open style="margin-top:2px">
+          <summary id="settingsSummary">Settings (optional)</summary>
+          <div style="margin-top:10px">
+        <div class="label">
+          <span id="templateLbl">Template</span>
+          <span class="badge" title="ATS-safe formatting" id="atsSafeBadge">ATS-safe</span>
+        </div>
+        <div class="row">
+          <select id="tplSelect" class="selectWide">
+            <option value="professional">Professional (ATS-safe)</option>
+          </select>
+          <button class="btn ghost" id="btnAtsInfo" type="button" style="flex:0 0 auto">ATS?</button>
+        </div>
+        <div class="hint" id="atsHintLine">ATS-safe formatting = simple headings, no tables/columns, easy-to-parse structure.</div>
+
+        <div class="label" id="tailorStrengthLbl">Tailoring strength</div>
+        <div class="strengthWrap">
+          <div class="strengthTop">
+            <div class="strengthPills" id="strengthPills">
+              <span class="miniPill" data-s="0" id="pillLight">Light</span>
+              <span class="miniPill active" data-s="1" id="pillBalanced">Balanced</span>
+              <span class="miniPill" data-s="2" id="pillAggressive">Aggressive</span>
+            </div>
+            <span class="badge" id="strengthBadge">Balanced</span>
+          </div>
+
+          <input id="strengthRange" type="range" min="0" max="2" step="1" value="1" />
+
+          <div class="hint" id="strengthHint">
+            Improves summary and bullets to match the job, without over-rewriting.
+          </div>
+        </div>
+          </div>
+        </details>
+
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <button class="btn primary cta" id="btnGenerate" type="button" disabled>Generate tailored CV</button>
+          <button class="btn" id="btnGenerateAgain" type="button" disabled style="display:none">Generate again</button>
+        </div>
+        <div class="hint" id="ctaHint" style="display:none; margin-top:8px"></div>
+        <div class="hint" id="genHint">
+          Same settings reuse a cached result (fast). To create a different version, change the tailoring strength.
+        </div>
+
+        <button class="infoButton" id="btnHowItWorks" type="button">
+  <span id="stepsTitle">How it works</span>
+  <span class="badge" id="stepsBadge">Ready</span>
+</button>
+<div class="hint" id="stepsMiniHint">Live progress shows while generating. We stay truthful and ATS-safe.</div>
+
+        <details class="info" id="pipelineDetails">
+          <summary>
+            <span id="pipelineTitle">Pipeline status</span>
+            <span class="badge" id="pipeBadge">—</span>
+          </summary>
+          <div class="monoSmall" id="pipeBox">Generate a CV to see pipeline details.</div>
+        </details>
+              </div><!-- /gateFormWrap -->
+</aside>
+
+      <!-- CENTER: Document canvas -->
+      <section class="card studioCanvas" aria-label="CV canvas">
+        <div class="outputTop">
+          <div>
+            <div style="font-weight:980;font-size:18px;letter-spacing:-.2px" id="tailoredTitle">Tailored CV</div>
+            <div class="hint" id="outHint">Generate a CV to see preview and ATS match.</div>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn small ghost showWhenSetupCollapsed" id="btnShowSetup" type="button">Setup</button>
+            <span class="badge warn" id="outStatus">Not generated</span>
+            <span class="badge" id="outModel">Model: —</span>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="tabs" id="canvasTabs" role="tablist" aria-label="Output view">
+          <button class="tabBtn active" id="tabPreview" type="button">Preview</button>
+          <button class="tabBtn" id="tabText" type="button">Text</button>
+          <button class="tabBtn" id="tabChanges" type="button">Changes</button>
+        </div>
+
+        <div class="cvBox" id="cvBox">
+          <div id="cvPreviewWrap" style="display:block;">
+            <div class="pageStage paperWrap">
+              <div class="pageZoom paperZoom" id="pageZoom">
+                <div id="cvPreview" class="cvPreview page paperA4">
+              <div class="hint">No CV generated yet.</div>
+            </div>
+              </div>
+            </div>
+
+            <div class="zoomHud" aria-label="Preview zoom controls">
+              <button class="iconBtn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+              <span class="zoomPct" id="zoomPct">100%</span>
+              <button class="iconBtn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+              <span class="zoomSep" aria-hidden="true"></span>
+              <span class="badge" id="pageIndicator">1 / 1</span>
+            </div>
+          </div>
+
+          <div id="cvTextWrap" style="display:none;">
+            <textarea class="cvText" id="cvText" spellcheck="false"></textarea>
+          </div>
+          <div id="cvChangesWrap" style="display:none;">
+            <div class="changeHeader">
+              <div>
+                <div style="font-weight:980;font-size:14px;letter-spacing:-.1px">Changes</div>
+                <div class="hint" id="changesHint">Review what changed since the last generation.</div>
+              </div>
+
+              <div class="row" style="flex:0 0 auto; justify-content:flex-end;">
+                <button class="btn small" id="btnUndoFromChanges" type="button" disabled>Undo</button>
+                <button class="btn small" id="btnResetFromChanges" type="button" disabled>Reset</button>
+                <button class="btn small" id="btnCopyChangeSummary" type="button" disabled>Copy summary</button>
+                <button class="btn small" id="btnSyncTextToDoc" type="button" style="display:none;">Sync text to preview</button>
+              </div>
+            </div>
+
+            <div class="changeKpis" id="changeKpis"></div>
+
+            <div class="bar" aria-hidden="true" style="margin-top:10px"><div id="trustBar"></div></div>
+            <div class="hint" id="trustHint" style="margin-top:6px"></div>
+
+            <div class="hr" style="margin-top:12px"></div>
+
+            <div id="changeCards"></div>
+
+            <details class="info" id="diffDetails" style="margin-top:12px">
+              <summary>Text diff (advanced)</summary>
+              <div class="monoSmall" id="diffBox">—</div>
+              <div class="row" style="margin-top:10px">
+                <button class="btn small" id="btnCopyDiff" type="button">Copy diff</button>
+              </div>
+              <div class="miniNote">Tip: If you manually edited the Text tab, changes may appear here even if Preview did not change.</div>
+            </details>
+          </div>
+
+        </div>
+
+        <div class="stickyActions">
+          <div class="stickyRow">
+            <button class="btn" id="btnCopy" type="button" disabled>Copy</button>
+            <button class="btn" id="btnDownload" type="button" disabled>Download .txt</button>
+            <button class="btn" id="btnQa" type="button" disabled>Final QA<span class="miniBadgeDot" id="qaDot"></span></button>
+            <button class="btn primary" id="btnPrint" type="button" disabled>Print / PDF</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Inspector -->
+      <aside class="card studioRight" aria-label="Inspector panel">
+        <div class="sectionTitle">
+          <h2 id="inspectorTitle">Inspector</h2>
+          <span class="badge" id="inspectorBadge">Live</span>
+        </div>
+        <div class="hint" id="inspectorHint">
+          Your CV stays centered. Use this panel to improve ATS match and polish wording without getting overwhelmed.
+        </div>
+
+        <div id="inspectorKeywords">
+
+        <details class="info" style="margin-top:12px">
+          <summary id="inspectorFutureTitle">More tools (coming soon)</summary>
+          <div class="hint" id="inspectorFutureHint" style="margin-top:8px">
+            Planned next: click any line in <b>Preview</b> to edit it here, bullet tightening, quantified impact suggestions, and section re-ordering.
+          </div>
+          <div class="row" style="margin-top:10px; flex-wrap:wrap">
+            <button class="btn small" type="button" disabled title="Coming soon">Shorten bullets</button>
+            <button class="btn small" type="button" disabled title="Coming soon">Add metrics</button>
+            <button class="btn small" type="button" disabled title="Coming soon">Rewrite for clarity</button>
+            <button class="btn small" type="button" disabled title="Coming soon">Tone control</button>
+          </div>
+        </details>
+
+        <div class="kpiRow">
+          <div class="kpi">
+            <div class="k" id="kpiAts">ATS match</div>
+            <div class="v" id="atsScore">—</div>
+            <div class="bar" aria-hidden="true"><div id="atsBar"></div></div>
+            <div class="hint" id="atsHint">Calculated from keyword coverage (used vs missing).</div>
+          </div>
+
+          <div class="kpi">
+            <div class="k" id="kpiUsed">Keywords used</div>
+            <div class="v" id="kwUsedCount">—</div>
+            <div class="hint" id="kpiUsedHint">Found in your tailored CV.</div>
+          </div>
+
+          <div class="kpi">
+            <div class="k" id="kpiMissing">Keywords missing</div>
+            <div class="v" id="kwMissCount">—</div>
+            <div class="hint" id="kpiMissingHint">Click a missing keyword to add it (truthfully).</div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="sectionTitle" style="margin-bottom:6px">
+          <h2 id="atsKwTitle">ATS keywords</h2>
+          <div class="row" style="justify-content:flex-end; flex:0 0 auto">
+            <button class="btn small" id="btnUndoEdit" type="button" disabled>Undo</button>
+            <button class="btn small" id="btnResetEdits" type="button" disabled>Reset</button>
+            <button class="btn small" id="btnCopyMissing" type="button" disabled>Copy missing</button>
+          </div>
+        </div>
+
+        <div class="hint" id="atsKwHint">These keywords are extracted from the job description. Click a missing keyword to add it to your CV (truthfully) and improve your ATS match.</div>
+
+        <div class="label" style="margin-top:12px" id="usedLbl">Used</div>
+        <div class="chips" id="chipsUsed"></div>
+
+        <div class="label" style="margin-top:12px" id="missingLbl">Missing</div>
+        <div class="chips" id="chipsMissing"></div>
+
+        <details class="info" style="margin-top:12px">
+          <summary id="debugTitle">Debug details</summary>
+          <div class="monoSmall" id="debugBox">—</div>
+        </details>
+        </div><!-- /inspectorKeywords -->
+
+        <div id="inspectorReview">
+          <div class="reviewCard">
+            <div class="reviewRow" style="margin-top:0">
+              <h3 class="reviewTitle" id="reviewTitle">AI Review</h3>
+              <span class="badge" id="reviewBadge">Not run</span>
+            </div>
+
+            <div class="hint" id="reviewHint" style="margin-top:8px">
+              Run a final check before you send or print. We flag missing basics, ATS risks, and “too good to be true” claims.
+            </div>
+
+            <div class="reviewRow">
+              <button class="btn" id="btnRunReview" type="button">Run review</button>
+              <button class="btn ghost" id="btnOpenReview" type="button">Open full report</button>
+            </div>
+
+            <ul class="reviewList" id="reviewList">
+              <li>ATS-safe structure & headings</li>
+              <li>Contact + location basics</li>
+              <li>Experience bullets (clarity, metrics, repetition)</li>
+              <li>Keyword coverage sanity check</li>
+            </ul>
+          </div>
+
+          <details class="info" style="margin-top:12px">
+            <summary>What happens to my data?</summary>
+            <div class="hint" style="margin-top:8px">
+              We only use your uploaded CV + the job description you provide to generate and score this tailored version.
+            </div>
+          </details>
+        </div>
+
+      </aside>
+    </section>
+  
+<!-- Tailoring steps + progress modal -->
+<div class="modalBackdrop" id="genModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="genTitle">
+  <div class="modalCard">
+    <div class="modalScroll">
+      <div class="modalHeader">
+        <div>
+          <h3 class="modalTitle" id="genTitle">Tailoring your CV</h3>
+          <div class="hint" id="genSub" style="margin-top:6px">Aligning your CV to the job — truthful and ATS-safe.</div>
+        </div>
+        <button class="btn small" id="genClose" type="button">Hide</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <span class="badge warn" id="genBadge">Generating…</span>
+        <span class="badge" id="genJobBadge">—</span>
+      </div>
+
+      <div class="genViz" id="genViz" aria-label="Tailoring visual">
+        <div class="genVizInner">
+          <div class="genVizTop">
+            <div class="genVizLabel" id="genVizLabel">Merge preview</div>
+            <span class="badge warn" id="genVizChip">Working…</span>
+          </div>
+
+          <div class="genVizCols">
+            <div class="genVizStack">
+              <div class="genVizMiniCard">
+                <div class="genVizMiniHead">
+                  <span class="genVizDot jd" aria-hidden="true"></span>
+                  <span id="genVizJdTitle">Job description</span>
+                </div>
+                <div class="genVizLines" aria-hidden="true">
+                  <span class="genVizLine w90"></span>
+                  <span class="genVizLine w70"></span>
+                  <span class="genVizLine w80"></span>
+                </div>
+              </div>
+
+              <div class="genVizPlus" aria-hidden="true">+</div>
+
+              <div class="genVizMiniCard">
+                <div class="genVizMiniHead">
+                  <span class="genVizDot cv" aria-hidden="true"></span>
+                  <span id="genVizCvTitle">Your CV</span>
+                </div>
+                <div class="genVizLines" aria-hidden="true">
+                  <span class="genVizLine w85"></span>
+                  <span class="genVizLine w60"></span>
+                  <span class="genVizLine w75"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="genVizFlow" aria-hidden="true"></div>
+
+            <div class="genVizMiniCard genVizOut">
+              <div class="genVizMiniHead">
+                <span style="display:flex;align-items:center;gap:8px">
+                  <span class="genVizDot out" aria-hidden="true"></span>
+                  <span id="genVizOutTitle">Tailored CV</span>
+                </span>
+              </div>
+
+              <div class="genVizJobTitle" id="genVizJobTitle">—</div>
+              <div class="genVizJobMeta" id="genVizJobMeta">—</div>
+
+              <div class="genVizLines" aria-hidden="true" style="margin-top:8px">
+                <span class="genVizLine w80"></span>
+                <span class="genVizLine w90"></span>
+                <span class="genVizLine w70"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint" style="margin-top:10px" id="stepsIntro">
+        This is what happens when you click “Generate”:
+      </div>
+
+      <ul style="margin:10px 0 0 18px; color:rgba(17,19,24,.70); font-weight:750; line-height:1.55" id="stepsList">
+        <li><span id="s1">Extract job keywords</span></li>
+        <li><span id="s2">Align summary & bullets</span></li>
+        <li><span id="s3">Keep ATS-safe structure</span></li>
+        <li><span id="s4">Compute ATS match</span></li>
+        <li><span id="s5">Prepare preview & export</span></li>
+      </ul>
+
+      <div class="hint" style="margin-top:10px" id="truthHint">
+        We stay truthful: we never invent experience or certifications. We only rephrase / reorder based on your uploaded CV + profile.
+      </div>
+    </div>
+
+    <div class="modalActions">
+      <button class="btn primary" id="genOk" type="button">Continue</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ATS info modal -->
+  <div class="modalBackdrop" id="atsModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="atsTitle">
+    <div class="modalCard">
+      <div class="modalScroll">
+        <div class="modalHeader">
+          <div>
+            <h3 class="modalTitle" id="atsTitle">What does ATS mean?</h3>
+            <div class="hint" style="margin-top:6px" id="atsModalIntro">
+              ATS = Applicant Tracking System. Companies use ATS to parse, search, and rank CVs.
+            </div>
+          </div>
+          <button class="btn small" id="atsClose" type="button">Close</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="hint" id="atsModalBody">
+          <b>ATS-safe formatting</b> improves the chance your CV is parsed correctly:
+          <ul style="margin:10px 0 0 18px; line-height:1.6">
+            <li>Use simple headings (Experience, Education, Skills).</li>
+            <li>Avoid tables, columns, text boxes, and complex layouts.</li>
+            <li>Use consistent dates and bullet structure.</li>
+          </ul>
+          <div style="margin-top:10px">
+            Our CV Studio keeps formatting simple and focuses on keywords and relevance — without inventing facts.
+          </div>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button class="btn primary" id="atsOk" type="button">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job description modal -->
+  <div class="modalBackdrop" id="descModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="descH">
+    <div class="modalCard">
+      <div class="modalScroll">
+        <div class="modalHeader">
+          <div style="min-width:0">
+            <h3 class="modalTitle" id="descH">Job description</h3>
+            <div class="descMeta" id="descMeta"></div>
+          </div>
+          <button class="btn small" id="descClose" type="button">Close</button>
+        </div>
+        <div class="hr"></div>
+        <div class="modalMonoBox" id="descText">Loading…</div>
+      </div>
+      <div class="modalActions">
+        <button class="btn" id="descCopy" type="button">Copy</button>
+        <a class="btn primary" id="descOpen" href="#" target="_blank" rel="noopener">Open apply link</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyword booster modal -->
+  <div class="modalBackdrop" id="kwModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="kwH">
+    <div class="modalCard">
+      <div class="modalScroll">
+        <div class="modalHeader">
+          <div style="min-width:0">
+            <h3 class="modalTitle" id="kwH">Add keyword</h3>
+            <div class="hint" style="margin-top:6px" id="kwSub">Add missing keywords — only if it's truly accurate for you.</div>
+          </div>
+          <button class="btn small" id="kwClose" type="button">Close</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="field">
+          <div class="fieldLabel" id="kwFieldLbl">Keyword</div>
+          <div class="chips" style="margin-top:0">
+            <span class="chip warn" id="kwChip">—</span>
+          </div>
+
+          <div class="checkLine" style="margin-top:10px">
+            <input type="checkbox" id="kwTruth"/>
+            <div>
+              <div id="kwTruthLbl">I confirm this keyword is true for me.</div>
+              <div class="tinyNote" id="kwTruthNote">We never invent experience. If it's not true, don’t add it.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="formRow" style="margin-top:12px">
+          <div class="field">
+            <div class="fieldLabel" id="kwWhereLbl">Where should it appear?</div>
+            <select id="kwTarget">
+              <option value="skills">Skills (recommended)</option>
+              <option value="experience">Experience</option>
+            </select>
+            <div class="tinyNote" id="kwWhereNote">Skills is usually the safest option for ATS without adding new claims.</div>
+          </div>
+
+          <div class="field">
+            <div class="fieldLabel" id="kwLangLbl">Language</div>
+            <select id="kwLang">
+              <option value="auto">Auto (match CV)</option>
+              <option value="de">German</option>
+              <option value="en">English</option>
+            </select>
+            <div class="tinyNote" id="kwLangNote">Auto matches your CV language. Choose German if your CV is in German.</div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <div class="fieldLabel" id="kwModeLbl">Insertion mode</div>
+          <div class="pillToggle" id="kwModeToggle">
+            <button type="button" data-mode="ai" class="active" id="kwModeAi">AI rewrite</button>
+            <button type="button" data-mode="quick" id="kwModeQuick">Quick (no AI)</button>
+          </div>
+          <div class="tinyNote" id="kwModeNote">AI tries to integrate the keyword naturally into an existing bullet. If your backend has no AI endpoint, we automatically fall back to smart templates.</div>
+        </div>
+
+        <div class="field" style="margin-top:12px" id="kwAiRecoBox">
+          <div class="fieldLabel">AI recommendation</div>
+          <div class="row" style="margin-top:8px;gap:8px;align-items:center">
+            <button class="btn small" id="kwAiRecoRefresh" type="button" style="flex:0 0 auto">Refresh</button>
+            <span class="badge" id="kwAiRecoBadge">—</span>
+          </div>
+          <div class="kwPreview" id="kwAiRecoText">—</div>
+          <div class="tinyNote" id="kwAiRecoNote">Recommendation is based on your existing CV text. It never invents experience.</div>
+        </div>
+
+
+        <!-- Skills target -->
+        <div id="kwSkillsBox" style="margin-top:12px">
+          <div class="field">
+            <div class="fieldLabel" id="kwSkillsGroupLbl">Which skill area?</div>
+            <select id="kwSkillGroup"></select>
+            <div class="tinyNote" id="kwSkillsGroupNote">We add the keyword with clean casing and consistent style.</div>
+          </div>
+        </div>
+
+        <!-- Experience target -->
+        <div id="kwExpBox" style="margin-top:12px; display:none">
+          <div class="field">
+            <div class="fieldLabel" id="kwExpRoleLbl">Which role?</div>
+            <select id="kwExpRole"></select>
+          </div>
+
+          <div class="field" style="margin-top:12px">
+            <div class="fieldLabel" id="kwExpHowLbl">How to insert?</div>
+            <select id="kwExpHow">
+              <option value="rewrite">Rewrite an existing bullet (recommended)</option>
+              <option value="append">Append to an existing bullet</option>
+              <option value="new">Add a new bullet</option>
+            </select>
+            <div class="tinyNote" id="kwExpHowNote">Rewriting is most natural and stays close to your real statements.</div>
+          </div>
+
+          <div class="field" style="margin-top:12px" id="kwBulletPickBox">
+            <div class="fieldLabel" id="kwExpBulletLbl">Which bullet?</div>
+            <select id="kwExpBullet"></select>
+            <div class="row" style="margin-top:8px;gap:8px">
+              <button class="btn small" id="kwAutoPick" type="button" style="flex:0 0 auto">Auto-pick best bullet</button>
+              <span class="badge" id="kwAutoPickBadge">—</span>
+            </div>
+            <div class="kwPreview" id="kwBulletPreview">—</div>
+          </div>
+
+          
+          <div class="field" style="margin-top:12px; display:none" id="kwRewriteBox">
+            <div class="fieldLabel">Rewrite options</div>
+            <div class="row" style="margin-top:8px;gap:8px;align-items:center">
+              <button class="btn small" id="kwRewriteAgain" type="button" style="flex:0 0 auto">Rewrite again</button>
+              <span class="badge" id="kwRewriteBadge">—</span>
+            </div>
+            <div class="tinyNote" id="kwRewriteHelp" style="margin-top:6px">Generates alternative rewrites for the selected bullet. Pick the best one, then click Apply.</div>
+            <div class="altOptions" id="kwRewriteOptions" style="margin-top:10px"></div>
+          </div>
+
+<div class="field" style="margin-top:12px; display:none" id="kwNoteBox">
+            <div class="fieldLabel" id="kwNoteLbl">Short note (important for new bullet)</div>
+            <textarea id="kwNote" rows="3" style="width:100%;border:0;outline:none;background:transparent;resize:vertical;font-weight:750"></textarea>
+            <div class="tinyNote" id="kwNoteHelp">Example: “Facilitated client workshops”, “Implemented OKRs”, “Built SQL reports”. Keeps it 100% truthful.</div>
+          </div>
+
+          <div class="warnBox" id="kwNewWarn" style="display:none">
+            Tip: A new bullet without context can look “made up”. If you don’t add a note, it’s safer to add the keyword under Skills.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <div class="fieldLabel" id="kwPreviewLbl">Preview</div>
+          <div class="kwPreview" id="kwResultPreview">—</div>
+          <div class="tinyNote" id="kwPreviewNote">You can always use Undo/Reset.</div>
+        </div>
+
+      </div>
+
+      <div class="modalActions">
+        <button class="btn" id="kwCancel" type="button">Cancel</button>
+        <button class="btn primary" id="kwApply" type="button">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- Final QA modal -->
+  <div class="modalBackdrop" id="qaModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="qaH">
+    <div class="modalCard">
+      <div class="modalScroll">
+        <div class="modalHeader">
+          <div style="min-width:0">
+            <h3 class="modalTitle" id="qaH">Final QA check</h3>
+            <div class="hint" style="margin-top:6px" id="qaSub">Last quick review before you export. This runs local checks (fast) and highlights common issues.</div>
+          </div>
+          <button class="btn small" id="qaCloseX" type="button">Close</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="field">
+          <div class="fieldLabel">Overall</div>
+          <div class="kwPreview" id="qaSummary">—</div>
+          <div class="tinyNote" id="qaMeta">—</div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <div class="fieldLabel">Checks</div>
+          <div class="qaList" id="qaChecks"></div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <div class="fieldLabel">Quick fixes</div>
+          <div class="qaList" id="qaFixes"></div>
+          <div class="tinyNote" style="margin-top:8px">Tip: Quick fixes only change your CV text. You can Undo/Reset anytime.</div>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button class="btn" id="qaRunAgain" type="button">Run again</button>
+        <button class="btn" id="qaClose" type="button">Close</button>
+        <button class="btn primary" id="qaContinue" type="button" style="display:none">Continue</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Activity log modal (nav dropdown) -->
+  <div class="modalBackdrop" id="activityModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="activityH">
+    <div class="modalCard">
+      <div class="modalScroll">
+        <div class="modalHeader">
+          <div style="min-width:0">
+            <h3 class="modalTitle" id="activityH">Application activity log</h3>
+            <div class="hint" style="margin-top:6px" id="activitySub">Latest timeline events (queued, prioritized, skipped, applied…).</div>
+          </div>
+          <button class="btn small" id="activityCloseX" type="button">Close</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:1 1 240px">
+            <div class="label" style="margin:0 0 6px" id="activityFilterLbl">Filter</div>
+            <select id="activityFilter" class="selectWide">
+              <option value="">All</option>
+              <option value="queued">Queued</option>
+              <option value="prioritized">Prioritized</option>
+              <option value="applied">Applied</option>
+              <option value="sent">Sent</option>
+              <option value="rejected">Rejected</option>
+              <option value="skipped">Skipped</option>
+            </select>
+          </div>
+
+          <div style="flex:0 0 auto">
+            <button class="btn" id="activityRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="errorTop" id="activityError"></div>
+
+        <div id="activityWrap" style="margin-top:10px">
+          <div class="modalMonoBox">Loading…</div>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <a class="btn ghost" href="./profile.html" data-nav="1">Back to upload</a>
+        <button class="btn" id="activityClose" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+<!-- Scripts -->
+  <script>
+    window.CVStudio = window.CVStudio || {};
+    window.CVStudio.config = Object.assign({}, window.CVStudio.config || {}, {
+      API_BASE: "https://jobmejob.schoene-viktor.workers.dev",
+      PRODUCT_NAME: "CV Studio",
+      STANDALONE: true,
+      FEATURES: {
+        gmail: false,
+        jobMatching: false
+      }
+    });
+  </script>
+  <script src="./vendor/supabase-js-2.100.1.js"></script>
+  <script src="./auth.js"></script>
+  <script src="./shared.js"></script>
+
+  <script src="./cv.app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Copy this file to `wrangler.toml` only after replacing placeholders
+# or after running `npx wrangler pages download config <PROJECT_NAME>`
+# against the existing Cloudflare Pages project.
+
+name = "cvstudio-work"
+pages_build_output_dir = "."
+compatibility_date = "2026-03-29"

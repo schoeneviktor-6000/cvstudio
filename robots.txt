@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /signup.html
+Disallow: /profile.html
+Disallow: /cv.html
