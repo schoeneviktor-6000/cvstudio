@@ -61,8 +61,10 @@ function hostnameForUrl(url){
 function isPermissionError(err){
   const msg = String(err && err.message ? err.message : err || "").toLowerCase();
   return (
+    msg.includes("cannot access contents of url") ||
     msg.includes("cannot access contents of the page") ||
     msg.includes("missing host permission") ||
+    msg.includes("must request permission to access this host") ||
     msg.includes("cannot access a chrome:// url") ||
     msg.includes("the extensions gallery cannot be scripted")
   );
